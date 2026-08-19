@@ -1,0 +1,21 @@
+import type { ReactNode } from "react";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { users } from "@/data/mock-data";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { AdminButton } from "@/components/ui/admin-button";
+import { Icons } from "@/lib/icons";
+
+export default async function UserDetailPage({ params }: { params: Promise<{ userId: string }> }) {
+  const { userId } = await params; const user = users.find(x=>x.id===userId) ?? users[0]; if (!user) notFound();
+  return <div className="space-y-6">
+    <Link href="/users" className="inline-flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-slate-800">← Back to users</Link>
+    <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-5 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-center gap-4"><span className="grid size-14 place-items-center rounded-full bg-emerald-50 text-base font-black text-emerald-700">{user.avatar}</span><div><div className="flex items-center gap-2"><h1 className="text-xl font-black text-slate-950">{user.name}</h1><StatusBadge status={user.status}/></div><p className="mt-1 text-xs text-slate-500">{user.email} · {user.id}</p></div></div><div className="flex gap-2"><AdminButton variant="outline">Edit user</AdminButton><AdminButton variant="danger">Suspend account</AdminButton></div></div>
+    <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
+      <div className="space-y-6"><section className="rounded-xl border border-slate-200 bg-white p-5"><h2 className="text-sm font-black text-slate-900">Account information</h2><div className="mt-5 grid gap-5 sm:grid-cols-2"><Info icon={<Icons.mail size={16}/>} label="Email" value={user.email}/><Info icon={<Icons.phone size={16}/>} label="Phone" value="+55 11 99876-4321"/><Info icon={<Icons.users size={16}/>} label="Account type" value={user.type}/><Info icon={<Icons.calendar size={16}/>} label="Joined" value={user.joined}/><Info icon={<Icons.store size={16}/>} label="Location" value={user.location}/><Info icon={<Icons.shield size={16}/>} label="Email verification" value="Verified"/></div></section><section className="rounded-xl border border-slate-200 bg-white p-5"><h2 className="text-sm font-black text-slate-900">Recent account activity</h2><div className="mt-4 divide-y divide-slate-100">{["Signed in from Chrome on Android","Saved listing LST-9007","Sent message to TechZone Brasil","Updated account profile"].map((x,i)=><div key={x} className="flex items-center justify-between py-3 text-xs"><span className="font-semibold text-slate-700">{x}</span><span className="text-slate-400">{i+1} hr ago</span></div>)}</div></section></div>
+      <aside className="space-y-6"><section className="rounded-xl border border-slate-200 bg-white p-5"><h2 className="text-sm font-black text-slate-900">Account health</h2><div className="mt-5 space-y-4"><Health label="Reports against user" value="0" tone="good"/><Health label="Active listings" value={user.type.includes("Seller") ? "12" : "0"}/><Health label="Warnings" value="0" tone="good"/><Health label="Last active" value="12 min ago"/></div></section><section className="rounded-xl border border-red-200 bg-red-50/30 p-5"><h2 className="text-sm font-black text-red-900">Danger zone</h2><p className="mt-2 text-xs leading-5 text-red-700/70">Administrative actions are recorded in the audit log.</p><button className="mt-4 w-full rounded-lg border border-red-200 bg-white px-3 py-2.5 text-xs font-bold text-red-700">Delete account</button></section></aside>
+    </div>
+  </div>;
+}
+function Info({icon,label,value}:{icon:ReactNode;label:string;value:string}){return <div className="flex gap-3"><span className="mt-0.5 text-slate-400">{icon}</span><div><p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{label}</p><p className="mt-1 text-xs font-semibold text-slate-800">{value}</p></div></div>}
+function Health({label,value,tone}:{label:string;value:string;tone?:"good"}){return <div className="flex items-center justify-between text-xs"><span className="text-slate-500">{label}</span><strong className={tone==="good"?"text-emerald-600":"text-slate-900"}>{value}</strong></div>}

@@ -1,0 +1,4 @@
+"use client";
+import { AdminButton } from "@/components/ui/admin-button";
+import { Icons } from "@/lib/icons";
+export default function ErrorPage({ reset }: { error: Error & { digest?: string }; reset: () => void }) { return <div className="grid min-h-[55vh] place-items-center"><div className="max-w-md rounded-2xl border border-red-200 bg-white p-8 text-center shadow-sm"><span className="mx-auto grid size-12 place-items-center rounded-full bg-red-50 text-red-600"><Icons.alert size={22}/></span><h2 className="mt-4 text-lg font-black text-slate-950">This admin view couldn&apos;t load</h2><p className="mt-2 text-sm leading-6 text-slate-500">The rest of the console is still available. Retry this view; if development navigation was interrupted, a normal refresh will also recover it.</p><AdminButton className="mt-5" onClick={reset}>Try again</AdminButton></div></div>; }
