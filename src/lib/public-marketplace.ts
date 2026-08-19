@@ -1,9 +1,15 @@
+import {
+  appBaseUrlForBrowser,
+  appBaseUrlForServer,
+  joinAppUrl,
+} from "@/lib/cross-app-url";
+
 export function marketplaceBaseUrl() {
-  const configured = process.env.NEXT_PUBLIC_MARKETPLACE_URL?.trim();
-  if (configured) return configured.replace(/\/$/, "");
-  return process.env.NODE_ENV === "development"
-    ? "http://localhost:3001"
-    : "https://marketlift.br";
+  return appBaseUrlForServer("marketplace");
+}
+
+export function browserMarketplaceBaseUrl() {
+  return appBaseUrlForBrowser("marketplace");
 }
 
 export function slugifyPublicTitle(value: string) {
@@ -16,10 +22,10 @@ export function slugifyPublicTitle(value: string) {
     .replace(/^-+|-+$/g, "");
 }
 
-export function publicListingUrl(title: string) {
-  return `${marketplaceBaseUrl()}/listing/${slugifyPublicTitle(title)}`;
+export function publicListingUrl(title: string, baseUrl = marketplaceBaseUrl()) {
+  return joinAppUrl(baseUrl, `listing/${slugifyPublicTitle(title)}`);
 }
 
-export function publicSellerUrl(sellerId: string) {
-  return `${marketplaceBaseUrl()}/seller/${encodeURIComponent(sellerId)}`;
+export function publicSellerUrl(sellerId: string, baseUrl = marketplaceBaseUrl()) {
+  return joinAppUrl(baseUrl, `seller/${encodeURIComponent(sellerId)}`);
 }
