@@ -1,12 +1,11 @@
 "use client";
 import { AdminButton } from "@/components/ui/admin-button";
 import { ActionDialog } from "@/components/ui/action-dialog";
-import { PublicListingLink } from "@/components/admin/public-marketplace-link";
 import { Icons } from "@/lib/icons";
 import { useAdminDemo } from "./admin-demo-provider";
 
 export function EntityActions({ kind, id, name }: { kind: "user" | "seller" | "listing" | "report" | "verification"; id: string; name: string }) {
-  const { setStatus } = useAdminDemo();
+  const { setStatus, toast } = useAdminDemo();
 
   if (kind === "verification") return <div className="flex flex-wrap gap-2">
     <ActionDialog trigger={<AdminButton><Icons.check size={15} aria-hidden="true"/> Approve</AdminButton>} title="Approve verification?" description={`${name} will be marked as verified.`} confirmLabel="Approve verification" onConfirm={() => setStatus(kind, id, "Verified", `${id} approved`)}/>
@@ -19,7 +18,7 @@ export function EntityActions({ kind, id, name }: { kind: "user" | "seller" | "l
   </div>;
 
   if (kind === "listing") return <div className="flex flex-wrap gap-2">
-    <PublicListingLink title={name}/>
+    <AdminButton variant="outline" onClick={() => toast("Public listing opened", `${id} opened in the public-view flow.`, "info")}><Icons.external size={15} aria-hidden="true"/> View public</AdminButton>
     <ActionDialog trigger={<AdminButton variant="danger">Remove listing</AdminButton>} title="Remove listing?" description={`${name} will no longer be available in the marketplace.`} confirmLabel="Remove listing" tone="danger" requireReason onConfirm={() => setStatus(kind, id, "Rejected", `${id} removed`)}/>
   </div>;
 
@@ -46,5 +45,5 @@ export function EntityActions({ kind, id, name }: { kind: "user" | "seller" | "l
 
 export function MockAction({ label, message, tone = "info" }: { label: string; message: string; tone?: "success" | "danger" | "info" }) {
   const { toast } = useAdminDemo();
-  return <button type="button" onClick={() => toast(label, message, tone)} className="rounded-lg border border-slate-300 px-3 py-2.5 text-left text-xs font-bold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2">{label}</button>;
+  return <button type="button" onClick={() => toast(label, message, tone)} className="rounded-lg border border-slate-300 px-3 py-2.5 text-left text-xs font-bold text-slate-700 transition hover:bg-slate-50">{label}</button>;
 }

@@ -22,7 +22,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html data-scroll-behavior="smooth" lang="en" className={`${figtree.variable} ${geistMono.variable} antialiased`}>
+    <html lang="en" className={`${figtree.variable} ${geistMono.variable} antialiased`}>
       <body>
         <a href="#admin-main-content" className="skip-link">Skip to main content</a>
         {children}

@@ -1,14 +1,13 @@
-import { ListingsManagement } from "@/components/admin/listings-management";
+"use client";
+import { listings } from "@/data/mock-data";
 import { PageHeader } from "@/components/ui/page-header";
+import { DataTable } from "@/components/ui/data-table";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { AdminButton } from "@/components/ui/admin-button";
+import { SafeLink } from "@/components/ui/safe-link";
+import { ActionDialog } from "@/components/ui/action-dialog";
+import { Icons } from "@/lib/icons";
+import { useAdminDemo } from "@/components/admin/admin-demo-provider";
 
-export default function ListingsPage() {
-  return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Listings"
-        description="Access every marketplace listing across all sellers and lifecycle states. Ordinary listings publish after automated validation; admin review is reserved for exceptions."
-      />
-      <ListingsManagement />
-    </div>
-  );
-}
+export default function ListingsPage(){const {getStatus,setStatus,toast}=useAdminDemo();return <div className="space-y-6"><PageHeader title="Listings" description="Review and manage marketplace inventory across all sellers." actions={<AdminButton variant="outline" onClick={()=>toast("Listing export prepared",undefined,"info")}><Icons.download size={16}/> Export</AdminButton>}/><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{[["Active listings","18,420","+11.7%"],["Under review","91","9 new today"],["Reported","24","Needs moderation"],["Rejected today","43","0.2%"]].map(([a,b,c])=><div key={a} className="rounded-xl border border-slate-200 bg-white p-4"><p className="text-xs font-semibold text-slate-500">{a}</p><strong className="mt-2 block text-xl font-black">{b}</strong><p className="mt-1 text-[10px] text-slate-400">{c}</p></div>)}</div><DataTable rows={listings} searchText={l=>`${l.id} ${l.title} ${l.seller} ${l.category}`} searchPlaceholder="Search listing, seller or listing ID…" statusOf={l=>getStatus("listing",l.id,l.status)} statuses={["Active","Pending","Review","Rejected"]} selectedLabel="listings" bulkActions={(selected,clear)=><ActionDialog trigger={<button className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-bold text-white">Remove selected</button>} title="Remove selected listings?" description="Removed listings will no longer be visible in the marketplace UI." confirmLabel="Remove listings" tone="danger" requireReason onConfirm={()=>{selected.forEach(id=>setStatus("listing",id,"Rejected"));clear();}}/>} columns={[
+{key:"listing",label:"Listing",cell:l=><div><div className="max-w-[280px] truncate font-bold text-slate-900">{l.title}</div><div className="mt-0.5 text-[10px] text-slate-400">{l.id} · {l.seller}</div></div>},{key:"category",label:"Category",cell:l=>l.category},{key:"price",label:"Price",cell:l=><strong className="text-slate-800">{l.price}</strong>},{key:"reports",label:"Reports",cell:l=><span className={l.reports?"font-black text-red-600":"text-slate-400"}>{l.reports}</span>},{key:"created",label:"Created",cell:l=>l.created},{key:"status",label:"Status",cell:l=><StatusBadge status={getStatus("listing",l.id,l.status)}/>},{key:"action",label:"",cell:l=><SafeLink href={`/listings/${l.id}`} aria-label={`View listing ${l.title}`} className="grid size-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><Icons.chevronRight size={16}/></SafeLink>}]}/></div>}
