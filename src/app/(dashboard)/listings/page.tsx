@@ -12,11 +12,7 @@ import { useAdminData } from "@/components/admin/admin-data-provider";
 import { exportCsv } from "@/lib/csv-export";
 
 export default function ListingsPage() {
-  const { getStatus, getDecision, commitDecision, listings } = useAdminData();
-  const active = listings.filter((listing) => getStatus("listing", listing.id, listing.status) === "Active").length;
-  const review = listings.filter((listing) => ["Pending", "Review"].includes(getStatus("listing", listing.id, listing.status))).length;
-  const reported = listings.filter((listing) => listing.reports > 0).length;
-  const unavailable = listings.filter((listing) => ["Rejected", "Removed", "Deleted"].includes(getStatus("listing", listing.id, listing.status))).length;
+  const { getStatus, commitDecision, listings, dashboard } = useAdminData();
 
   return (
     <div className="space-y-6">
@@ -32,10 +28,10 @@ export default function ListingsPage() {
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {[
-          ["Active listings", active, "Visible in marketplace"],
-          ["Under review", review, "Pending or in review"],
-          ["Reported", reported, "Needs moderation"],
-          ["Unavailable", unavailable, "Rejected, removed or seller-deleted"],
+          ["Total listings", dashboard.counts.totalListings, "All listing records"],
+          ["Active listings", dashboard.counts.publishedListings, "Visible in marketplace"],
+          ["Under review", dashboard.counts.listingsUnderReview, "Needs moderation"],
+          ["Reported", dashboard.counts.reportedListings, "Has report history"],
         ].map(([label, value, meta]) => (
           <div key={String(label)} className="rounded-xl border border-slate-200 bg-white p-4">
             <p className="text-xs font-semibold text-slate-500">{label}</p>
