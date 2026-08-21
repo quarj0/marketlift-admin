@@ -48,12 +48,21 @@ export default function ModerationPage() {
           cell: (listing) => {
             const currentStatus = getStatus("listing", listing.id, listing.status);
             const decision = getDecision("listing", listing.id);
-            const finalAction = decision?.action ?? (currentStatus === "Rejected" || currentStatus === "Removed" ? currentStatus : currentStatus === "Active" && listing.status !== "Active" ? "Approved" : null);
+            const moderationFinal = decision?.action ?? (currentStatus === "Rejected" ? "Rejected" : null);
+            const canRemove = !["Rejected", "Removed", "Deleted"].includes(currentStatus);
 
             return <div className="flex flex-wrap items-center gap-1.5">
-              {finalAction ? (
+              {moderationFinal ? (
                 <span className="inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 text-[11px] font-black text-slate-700">
-                  <Icons.lock size={13} aria-hidden="true" /> Final: {finalAction}
+                  <Icons.lock size={13} aria-hidden="true" /> Moderation: {moderationFinal}
+                </span>
+              ) : currentStatus === "Removed" ? (
+                <span className="inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-2.5 text-[11px] font-black text-red-800">
+                  <Icons.lock size={13} aria-hidden="true" /> Enforcement: Removed
+                </span>
+              ) : currentStatus === "Deleted" ? (
+                <span className="inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 text-[11px] font-black text-slate-700">
+                  <Icons.lock size={13} aria-hidden="true" /> Lifecycle: Deleted by seller
                 </span>
               ) : <>
                 <ActionDialog
@@ -73,6 +82,17 @@ export default function ModerationPage() {
                   onConfirm={(reason) => void commitDecision("listing", listing.id, "Rejected", "Rejected", `${listing.id} rejected`, "danger", reason)}
                 />
               </>}
+              {moderationFinal === "Approved" && canRemove && (
+                <ActionDialog
+                  trigger={<button className="rounded-lg bg-red-50 px-2.5 py-1.5 text-[11px] font-black text-red-700 hover:bg-red-100">Remove</button>}
+                  title="Remove approved listing from Marketlift?"
+                  description="The listing will become unavailable, but the earlier approval remains recorded as the final decision for that moderation case."
+                  confirmLabel="Remove listing"
+                  tone="danger"
+                  requireReason
+                  onConfirm={(reason) => void commitDecision("listing", listing.id, "Removed", "Removed", `${listing.id} removed`, "danger", reason)}
+                />
+              )}
               <SafeLink href={`/listings/${listing.id}`} aria-label={`Review ${listing.title}`} className="grid size-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><Icons.eye size={15} /></SafeLink>
             </div>;
           },

@@ -16,7 +16,7 @@ export default function ListingsPage() {
   const active = listings.filter((listing) => getStatus("listing", listing.id, listing.status) === "Active").length;
   const review = listings.filter((listing) => ["Pending", "Review"].includes(getStatus("listing", listing.id, listing.status))).length;
   const reported = listings.filter((listing) => listing.reports > 0).length;
-  const unavailable = listings.filter((listing) => ["Rejected", "Removed"].includes(getStatus("listing", listing.id, listing.status))).length;
+  const unavailable = listings.filter((listing) => ["Rejected", "Removed", "Deleted"].includes(getStatus("listing", listing.id, listing.status))).length;
 
   return (
     <div className="space-y-6">
@@ -35,7 +35,7 @@ export default function ListingsPage() {
           ["Active listings", active, "Visible in marketplace"],
           ["Under review", review, "Pending or in review"],
           ["Reported", reported, "Needs moderation"],
-          ["Unavailable", unavailable, "Rejected or removed"],
+          ["Unavailable", unavailable, "Rejected, removed or seller-deleted"],
         ].map(([label, value, meta]) => (
           <div key={String(label)} className="rounded-xl border border-slate-200 bg-white p-4">
             <p className="text-xs font-semibold text-slate-500">{label}</p>
@@ -50,25 +50,24 @@ export default function ListingsPage() {
         searchText={(listing) => `${listing.id} ${listing.title} ${listing.seller} ${listing.category}`}
         searchPlaceholder="Search listing, seller or listing ID…"
         statusOf={(listing) => getStatus("listing", listing.id, listing.status)}
-        statuses={["Active", "Pending", "Review", "Rejected", "Removed"]}
+        statuses={["Active", "Pending", "Review", "Rejected", "Removed", "Deleted"]}
         selectedLabel="listings"
         bulkActions={(selected, clear) => {
           const eligible = selected.filter((id) => {
             const listing = listings.find((item) => item.id === id);
             if (!listing) return false;
             const status = getStatus("listing", id, listing.status);
-            const migratedApproval = status === "Active" && listing.status !== "Active";
-            return !getDecision("listing", id) && !migratedApproval && !["Rejected", "Removed"].includes(status);
+            return !["Rejected", "Removed", "Deleted"].includes(status);
           });
 
           if (eligible.length === 0) {
-            return <span className="text-xs font-bold text-slate-600">Selected listings already have final decisions.</span>;
+            return <span className="text-xs font-bold text-slate-600">Selected listings are already unavailable.</span>;
           }
 
           return <ActionDialog
             trigger={<button className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-bold text-white">Remove eligible ({eligible.length})</button>}
             title="Remove selected listings permanently?"
-            description={`This will permanently remove ${eligible.length} eligible listing${eligible.length === 1 ? "" : "s"}. Listings with an existing final decision are excluded.`}
+            description={`This will remove ${eligible.length} eligible listing${eligible.length === 1 ? "" : "s"} from the marketplace. Earlier moderation approvals remain in the audit history.`}
             confirmLabel="Remove listings"
             tone="danger"
             requireReason

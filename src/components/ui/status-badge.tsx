@@ -7,6 +7,7 @@ const tones: Record<string, string> = {
   Resolved: "bg-slate-100 text-slate-700 ring-slate-500/20",
   Dismissed: "bg-slate-100 text-slate-600 ring-slate-500/20",
   Removed: "bg-red-50 text-red-800 ring-red-700/20",
+  Deleted: "bg-slate-100 text-slate-700 ring-slate-500/20",
   Pending: "bg-amber-50 text-amber-700 ring-amber-600/20",
   Review: "bg-blue-50 text-blue-700 ring-blue-600/20",
   Suspended: "bg-red-50 text-red-700 ring-red-600/20",

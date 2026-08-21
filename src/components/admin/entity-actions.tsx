@@ -8,11 +8,11 @@ import { useAdminData } from "./admin-data-provider";
 
 type EntityKind = "user" | "seller" | "listing" | "report" | "verification";
 
-function FinalDecision({ action }: { action: string }) {
+function FinalDecision({ action, label = "Final decision" }: { action: string; label?: string }) {
   return (
     <div role="status" className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3.5 text-xs font-black text-slate-700">
       <Icons.lock size={14} aria-hidden="true" />
-      Final decision: {action}
+      {label}: {action}
     </div>
   );
 }
@@ -83,25 +83,25 @@ export function EntityActions({
   }
 
   if (kind === "listing") {
-    const finalAction = storedDecision?.action ?? (currentStatus === "Rejected" ? "Rejected" : currentStatus === "Removed" ? "Removed" : currentStatus === "Active" && status && status !== "Active" ? "Approved" : null);
-    if (finalAction) {
-      return <div className="flex flex-wrap gap-2">
-        {finalAction === "Approved" && <PublicListingLink title={name} slug={publicSlug} />}
-        <FinalDecision action={finalAction} />
-      </div>;
-    }
+    const moderationDecision = storedDecision?.action ?? (currentStatus === "Rejected" ? "Rejected" : null);
+    const unavailableLifecycle = currentStatus === "Removed" || currentStatus === "Deleted";
 
     return <div className="flex flex-wrap gap-2">
-      <PublicListingLink title={name} slug={publicSlug} />
-      <ActionDialog
-        trigger={<AdminButton variant="danger">Remove listing</AdminButton>}
-        title="Remove listing permanently?"
-        description={`${name} will no longer be available in the marketplace. This enforcement decision cannot be reversed from the admin console.`}
-        confirmLabel="Remove listing"
-        tone="danger"
-        requireReason
-        onConfirm={(reason) => void commitDecision(kind, id, "Removed", "Removed", `${id} removed`, "danger", reason)}
-      />
+      {currentStatus === "Active" && <PublicListingLink title={name} slug={publicSlug} />}
+      {moderationDecision && <FinalDecision action={moderationDecision} label="Moderation" />}
+      {currentStatus === "Removed" && <FinalDecision action="Removed" label="Enforcement" />}
+      {currentStatus === "Deleted" && <FinalDecision action="Deleted by seller" label="Lifecycle" />}
+      {!unavailableLifecycle && currentStatus !== "Rejected" && (
+        <ActionDialog
+          trigger={<AdminButton variant="danger">Remove listing</AdminButton>}
+          title="Remove listing from Marketlift?"
+          description={`${name} will no longer be available in the marketplace. Any earlier moderation approval remains in the audit history.`}
+          confirmLabel="Remove listing"
+          tone="danger"
+          requireReason
+          onConfirm={(reason) => void commitDecision(kind, id, "Removed", "Removed", `${id} removed`, "danger", reason)}
+        />
+      )}
     </div>;
   }
 
