@@ -5,7 +5,6 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   experimental: {
     serverComponentsHmrCache: false,
-    webpackBuildWorker: false,
   },
   async headers() {
     return [
