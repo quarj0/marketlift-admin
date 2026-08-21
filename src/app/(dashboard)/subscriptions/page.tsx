@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { AdminButton } from "@/components/ui/admin-button";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -19,10 +19,8 @@ export default function SubscriptionsPage() {
   const [busy,setBusy]=useState(false);
   const { plans, subscriptions, saveSellerPlan } = useAdminData();
 
-  useEffect(()=>{
-    if(editing === "new") setForm(emptyForm);
-    else if(editing) setForm({name:editing.name,monthlyPrice:String(editing.priceValue),yearlyPrice:String(editing.yearlyPriceValue),listingLimit:String(editing.listings),promotionCredits:String(editing.featured),visibilityWeight:String(editing.visibilityWeight),recommended:editing.recommended,active:editing.active,features:editing.features.join("\n")});
-  },[editing]);
+  const openNew=()=>{setForm(emptyForm);setEditing("new")};
+  const openEdit=(item:PlanRecord)=>{setForm({name:item.name,monthlyPrice:String(item.priceValue),yearlyPrice:String(item.yearlyPriceValue),listingLimit:String(item.listings),promotionCredits:String(item.featured),visibilityWeight:String(item.visibilityWeight),recommended:item.recommended,active:item.active,features:item.features.join("\n")});setEditing(item)};
 
   const save=async()=>{
     if(!editing || form.name.trim().length<2) return;
@@ -37,14 +35,14 @@ export default function SubscriptionsPage() {
   };
 
   return <div className="space-y-6">
-    <PageHeader title="Subscriptions" description="Manage seller plans and review current seller subscriptions." actions={<AdminButton onClick={()=>setEditing("new")}>+ Create plan</AdminButton>} />
+    <PageHeader title="Subscriptions" description="Manage seller plans and review current seller subscriptions." actions={<AdminButton onClick={openNew}>+ Create plan</AdminButton>} />
 
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
       {plans.map((item)=><article key={item.id} className="relative rounded-xl border border-slate-200 bg-white p-5 transition hover:shadow-lg hover:shadow-slate-950/5">
         <div className="flex items-center justify-between gap-2"><span className="text-xs font-black uppercase tracking-wide text-slate-500">{item.name}</span>{item.badge&&<span className="rounded-full bg-slate-100 px-2 py-1 text-[9px] font-bold text-slate-500">{item.badge}</span>}</div>
         <div className="mt-4"><strong className="text-2xl font-black text-slate-950">{item.price}</strong><span className="text-xs text-slate-400">{item.period}</span></div>
         <div className="mt-5 space-y-3 border-t border-slate-100 pt-4 text-xs"><Row label="Current sellers" value={item.sellers.toLocaleString("pt-BR")}/><Row label="Listing limit" value={String(item.listings)}/><Row label="Promotion credits" value={String(item.featured)}/><Row label="Status" value={item.active?"Active":"Inactive"}/></div>
-        <button type="button" onClick={()=>setEditing(item)} className="mt-5 w-full rounded-lg border border-slate-200 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2">Edit plan</button>
+        <button type="button" onClick={()=>openEdit(item)} className="mt-5 w-full rounded-lg border border-slate-200 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2">Edit plan</button>
       </article>)}
     </div>
 

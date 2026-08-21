@@ -15,3 +15,10 @@ export type ActivityRecord = { id:string; admin:string; action:string; target:st
 export type ModerationRecord = { id:string; status:string; source:string; reviewReason:string; decisionReason:string; openedAt:string; decidedAt:string; decidedBy:string; listingId:string };
 export type PaymentSummary = { paidTotal:number; refundedTotal:number; paidCount:number; failedCount:number; pendingCount:number; successRate:number };
 export type VerificationSummary = { pending:number; review:number; verifiedToday:number; rejectedToday:number };
+
+export type AdminNotificationRecord = { id:string; type:string; title:string; body:string; createdAt:string; read:boolean; href:string; data:Record<string,unknown> };
+export type DashboardCounts = { totalUsers:number; totalSellers:number; activeSellers:number; verifiedSellers:number; totalListings:number; publishedListings:number; listingsUnderReview:number; rejectedListings:number; reportedListings:number; openReports:number; pendingVerifications:number; failedPayments:number; recordedPayments:number; openSupportTickets:number; paidSubscriptions:number };
+export type RevenueSummary = { today:number; thisMonth:number; total:number; subscriptionTotal:number; promotionTotal:number };
+export type AdminDashboardRecord = { counts:DashboardCounts; revenue:RevenueSummary };
+export type AdminStaffRecord = { id:string; name:string; email:string; status:Status; adminRole:string|null; joined:string };
+export type AdminInvitationRecord = { id:string; email:string; role:string; active:boolean; invitedBy:string; expiresAt:string; acceptedAt:string; revokedAt:string };
