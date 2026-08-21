@@ -1,11 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "standalone",
   poweredByHeader: false,
   experimental: {
     serverComponentsHmrCache: false,
-    webpackBuildWorker: false,
   },
   async headers() {
     return [
