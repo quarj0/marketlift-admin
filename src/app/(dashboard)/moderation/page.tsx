@@ -1,18 +1,17 @@
 "use client";
 
-import { listings } from "@/data/mock-data";
 import { PageHeader } from "@/components/ui/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { ActionDialog } from "@/components/ui/action-dialog";
 import { SafeLink } from "@/components/ui/safe-link";
 import { Icons } from "@/lib/icons";
-import { useAdminDemo } from "@/components/admin/admin-demo-provider";
+import { useAdminData } from "@/components/admin/admin-data-provider";
 
-const flagged = listings.filter((listing) => listing.reports > 0 || ["Review", "Rejected", "Removed"].includes(listing.status));
 
 export default function ModerationPage() {
-  const { getStatus, getDecision, commitDecision } = useAdminDemo();
+  const { getStatus, getDecision, commitDecision, listings } = useAdminData();
+  const flagged = listings.filter((listing) => listing.reports > 0 || ["Review", "Rejected", "Removed"].includes(listing.status));
 
   return <div className="space-y-6">
     <PageHeader title="Moderation" description="Review flagged listings and enforce marketplace policy consistently." />
@@ -62,7 +61,7 @@ export default function ModerationPage() {
                   title="Approve listing permanently?"
                   description="This finalizes the current moderation case as approved. It cannot later be changed to rejected."
                   confirmLabel="Approve"
-                  onConfirm={() => commitDecision("listing", listing.id, "Approved", "Active", `${listing.id} approved`)}
+                  onConfirm={(reason) => void commitDecision("listing", listing.id, "Approved", "Active", `${listing.id} approved`, "success", reason)}
                 />
                 <ActionDialog
                   trigger={<button className="rounded-lg bg-red-50 px-2.5 py-1.5 text-[11px] font-black text-red-700 hover:bg-red-100">Reject</button>}
@@ -71,7 +70,7 @@ export default function ModerationPage() {
                   confirmLabel="Reject"
                   tone="danger"
                   requireReason
-                  onConfirm={() => commitDecision("listing", listing.id, "Rejected", "Rejected", `${listing.id} rejected`, "danger")}
+                  onConfirm={(reason) => void commitDecision("listing", listing.id, "Rejected", "Rejected", `${listing.id} rejected`, "danger", reason)}
                 />
               </>}
               <SafeLink href={`/listings/${listing.id}`} aria-label={`Review ${listing.title}`} className="grid size-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><Icons.eye size={15} /></SafeLink>

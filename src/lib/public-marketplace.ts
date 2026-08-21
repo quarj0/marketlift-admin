@@ -3,10 +3,6 @@ import {
   appBaseUrlForServer,
   joinAppUrl,
 } from "@/lib/cross-app-url";
-import {
-  publicListingSlugByTitle,
-  publicSellerIdByAdminId,
-} from "@/data/public-marketplace-catalog.generated";
 
 export function marketplaceBaseUrl() {
   return appBaseUrlForServer("marketplace");
@@ -26,15 +22,13 @@ export function slugifyPublicTitle(value: string) {
     .replace(/^-+|-+$/g, "");
 }
 
-export function publicListingUrl(title: string, baseUrl = marketplaceBaseUrl()) {
-  const exactSlug = publicListingSlugByTitle[title];
-  const slug = exactSlug || slugifyPublicTitle(title);
+export function publicListingUrl(title: string, baseUrl = marketplaceBaseUrl(), exactSlug?: string) {
+  const slug = exactSlug?.trim() || slugifyPublicTitle(title);
   return joinAppUrl(baseUrl, `listing/${encodeURIComponent(slug)}`);
 }
 
 export function publicSellerUrl(sellerId: string, baseUrl = marketplaceBaseUrl()) {
-  const publicSellerId = publicSellerIdByAdminId[sellerId] || sellerId;
-  return joinAppUrl(baseUrl, `seller/${encodeURIComponent(publicSellerId)}`);
+  return joinAppUrl(baseUrl, `seller/${encodeURIComponent(sellerId)}`);
 }
 
 export function publicMarketplaceAssetUrl(source: string, baseUrl = marketplaceBaseUrl()) {

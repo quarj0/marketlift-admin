@@ -1,6 +1,5 @@
 "use client";
 
-import { listings } from "@/data/mock-data";
 import { PageHeader } from "@/components/ui/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -9,10 +8,11 @@ import { SafeLink } from "@/components/ui/safe-link";
 import { ActionDialog } from "@/components/ui/action-dialog";
 import { MarketplaceImage } from "@/components/admin/marketplace-image";
 import { Icons } from "@/lib/icons";
-import { useAdminDemo } from "@/components/admin/admin-demo-provider";
+import { useAdminData } from "@/components/admin/admin-data-provider";
+import { exportCsv } from "@/lib/csv-export";
 
 export default function ListingsPage() {
-  const { getStatus, getDecision, commitDecision, toast } = useAdminDemo();
+  const { getStatus, getDecision, commitDecision, listings } = useAdminData();
   const active = listings.filter((listing) => getStatus("listing", listing.id, listing.status) === "Active").length;
   const review = listings.filter((listing) => ["Pending", "Review"].includes(getStatus("listing", listing.id, listing.status))).length;
   const reported = listings.filter((listing) => listing.reports > 0).length;
@@ -24,7 +24,7 @@ export default function ListingsPage() {
         title="Listings"
         description="Review marketplace listings using the same catalog, identifiers and content shown on the public marketplace."
         actions={
-          <AdminButton variant="outline" onClick={() => toast("Listing export prepared", undefined, "info")}>
+          <AdminButton variant="outline" onClick={() => exportCsv("marketlift-listings.csv", ["ID","Title","Seller","Category","Price","Status","Reports","Views","Favorites","Inquiries","Created"], listings.map((l) => [l.id,l.title,l.seller,l.category,l.price,l.status,l.reports,l.views,l.favorites,l.inquiries,l.created]))}>
             <Icons.download size={16} /> Export
           </AdminButton>
         }
@@ -72,9 +72,8 @@ export default function ListingsPage() {
             confirmLabel="Remove listings"
             tone="danger"
             requireReason
-            onConfirm={() => {
-              eligible.forEach((id) => commitDecision("listing", id, "Removed", "Removed", `${id} removed`, "danger"));
-              clear();
+            onConfirm={(reason) => {
+              void Promise.all(eligible.map((id) => commitDecision("listing", id, "Removed", "Removed", `${id} removed`, "danger", reason))).then(clear);
             }}
           />;
         }}

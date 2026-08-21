@@ -1,23 +1,15 @@
+"use client";
 import { SafeLink } from "@/components/ui/safe-link";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { PageHeader } from "@/components/ui/page-header";
-import {
-  activityLog,
-  listings,
-  payments,
-  reports,
-  sellers,
-  supportTickets,
-  users,
-  verifications,
-} from "@/data/mock-data";
+import { useAdminData } from "@/components/admin/admin-data-provider";
 import { Icons } from "@/lib/icons";
 import { DashboardActivityCard } from "@/components/admin/dashboard-activity-card";
-import { DateRangeControl } from "@/components/ui/date-range-control";
 import { MarketplaceImage } from "@/components/admin/marketplace-image";
 
 export default function DashboardPage() {
+  const { activityLog, listings, payments, reports, sellers, supportTickets, users, verifications, sessionUser } = useAdminData();
   const activeListings = listings.filter((listing) => listing.status === "Active").length;
   const listingStatus = [
     ["Active", listings.filter((listing) => listing.status === "Active").length, "bg-emerald-500"],
@@ -28,9 +20,9 @@ export default function DashboardPage() {
   const listingTotal = Math.max(listings.length, 1);
 
   const stats = [
-    { label: "Total users", value: users.length.toLocaleString("pt-BR"), change: "Current catalog", trend: "up" as const, meta: "Administration preview" },
-    { label: "Sellers", value: sellers.length.toLocaleString("pt-BR"), change: "Marketplace", trend: "up" as const, meta: "Canonical seller catalog" },
-    { label: "Active listings", value: activeListings.toLocaleString("pt-BR"), change: `${listings.length} total`, trend: "up" as const, meta: "Public marketplace catalog" },
+    { label: "Total users", value: users.length.toLocaleString("pt-BR"), change: "Current", trend: "up" as const, meta: "Registered accounts" },
+    { label: "Sellers", value: sellers.length.toLocaleString("pt-BR"), change: "Current", trend: "up" as const, meta: "Seller accounts" },
+    { label: "Active listings", value: activeListings.toLocaleString("pt-BR"), change: `${listings.length} total`, trend: "up" as const, meta: "Marketplace listings" },
     { label: "Recorded payments", value: payments.length.toLocaleString("pt-BR"), change: "Seller billing", trend: "up" as const, meta: "Subscription and promotion activity" },
   ];
 
@@ -46,7 +38,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Good evening, Ana" description="Here’s what’s happening on Marketlift today." actions={<DateRangeControl />} />
+      <PageHeader title={`Welcome, ${sessionUser?.name?.split(" ")[0] || "Admin"}`} description="Here’s what’s happening on Marketlift today." />
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{stats.map((stat) => <KpiCard key={stat.label} {...stat} />)}</section>
 
       <section className="rounded-xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,.03)]">

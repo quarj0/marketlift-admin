@@ -1,4 +1,4 @@
-import type { Status } from "@/data/mock-data";
+import type { Status } from "@/types/admin";
 
 const tones: Record<string, string> = {
   Active: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",

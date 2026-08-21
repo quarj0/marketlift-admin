@@ -1,4 +1,4 @@
 "use client";
 import { StatusBadge } from "./status-badge";
-import { useAdminDemo } from "@/components/admin/admin-demo-provider";
-export function LiveStatusBadge({kind,id,status}:{kind:string;id:string;status:string}){const {getStatus}=useAdminDemo();return <StatusBadge status={getStatus(kind,id,status)}/>}
+import { useAdminData } from "@/components/admin/admin-data-provider";
+export function LiveStatusBadge({kind,id,status}:{kind:string;id:string;status:string}){const {getStatus}=useAdminData();return <StatusBadge status={getStatus(kind,id,status)}/>}

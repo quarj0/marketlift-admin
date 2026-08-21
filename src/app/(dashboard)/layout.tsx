@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { AdminShell } from "@/components/admin/admin-shell";
-import { AdminDemoProvider } from "@/components/admin/admin-demo-provider";
+import { AdminDataProvider } from "@/components/admin/admin-data-provider";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
-  return <AdminDemoProvider><AdminShell>{children}</AdminShell></AdminDemoProvider>;
+  return <AdminDataProvider><AdminShell>{children}</AdminShell></AdminDataProvider>;
 }

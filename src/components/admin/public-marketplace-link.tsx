@@ -34,9 +34,10 @@ export function PublicListingLink({
   title,
   className = "",
   label = "View public listing",
-}: CommonProps & { title: string; label?: string }) {
+  slug,
+}: CommonProps & { title: string; label?: string; slug?: string }) {
   const marketplaceBase = useMarketplaceBaseUrl();
-  const href = publicListingUrl(title, marketplaceBase);
+  const href = publicListingUrl(title, marketplaceBase, slug);
 
   return (
     <a

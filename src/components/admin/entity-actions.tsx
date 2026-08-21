@@ -4,7 +4,7 @@ import { AdminButton } from "@/components/ui/admin-button";
 import { ActionDialog } from "@/components/ui/action-dialog";
 import { PublicListingLink } from "@/components/admin/public-marketplace-link";
 import { Icons } from "@/lib/icons";
-import { useAdminDemo } from "./admin-demo-provider";
+import { useAdminData } from "./admin-data-provider";
 
 type EntityKind = "user" | "seller" | "listing" | "report" | "verification";
 
@@ -22,13 +22,15 @@ export function EntityActions({
   id,
   name,
   status,
+  publicSlug,
 }: {
   kind: EntityKind;
   id: string;
   name: string;
   status?: string;
+  publicSlug?: string;
 }) {
-  const { getStatus, setStatus, getDecision, commitDecision } = useAdminDemo();
+  const { getStatus, setStatus, getDecision, commitDecision } = useAdminData();
   const currentStatus = getStatus(kind, id, status ?? "Pending");
   const storedDecision = getDecision(kind, id);
 
@@ -42,7 +44,7 @@ export function EntityActions({
         title="Approve verification permanently?"
         description={`${name} will be marked as verified. This decision cannot later be changed to rejected.`}
         confirmLabel="Approve verification"
-        onConfirm={() => commitDecision(kind, id, "Approved", "Verified", `${id} approved`)}
+        onConfirm={(reason) => void commitDecision(kind, id, "Approved", "Verified", `${id} approved`, "success", reason)}
       />
       <ActionDialog
         trigger={<AdminButton variant="danger"><Icons.x size={15} aria-hidden="true" /> Reject</AdminButton>}
@@ -51,7 +53,7 @@ export function EntityActions({
         confirmLabel="Reject verification"
         tone="danger"
         requireReason
-        onConfirm={() => commitDecision(kind, id, "Rejected", "Rejected", `${id} rejected`, "danger")}
+        onConfirm={(reason) => void commitDecision(kind, id, "Rejected", "Rejected", `${id} rejected`, "danger", reason)}
       />
     </div>;
   }
@@ -67,7 +69,7 @@ export function EntityActions({
         description="Mark this investigation as resolved. Once resolved, it cannot later be dismissed."
         confirmLabel="Resolve report"
         requireReason
-        onConfirm={() => commitDecision(kind, id, "Resolved", "Resolved", `${id} resolved`)}
+        onConfirm={(reason) => void commitDecision(kind, id, "Resolved", "Resolved", `${id} resolved`, "success", reason)}
       />
       <ActionDialog
         trigger={<AdminButton variant="outline">Dismiss</AdminButton>}
@@ -75,7 +77,7 @@ export function EntityActions({
         description="Dismiss this report without enforcement. Once dismissed, it cannot later be resolved instead."
         confirmLabel="Dismiss report"
         requireReason
-        onConfirm={() => commitDecision(kind, id, "Dismissed", "Dismissed", `${id} dismissed`, "info")}
+        onConfirm={(reason) => void commitDecision(kind, id, "Dismissed", "Dismissed", `${id} dismissed`, "info", reason)}
       />
     </div>;
   }
@@ -84,13 +86,13 @@ export function EntityActions({
     const finalAction = storedDecision?.action ?? (currentStatus === "Rejected" ? "Rejected" : currentStatus === "Removed" ? "Removed" : currentStatus === "Active" && status && status !== "Active" ? "Approved" : null);
     if (finalAction) {
       return <div className="flex flex-wrap gap-2">
-        {finalAction === "Approved" && <PublicListingLink title={name} />}
+        {finalAction === "Approved" && <PublicListingLink title={name} slug={publicSlug} />}
         <FinalDecision action={finalAction} />
       </div>;
     }
 
     return <div className="flex flex-wrap gap-2">
-      <PublicListingLink title={name} />
+      <PublicListingLink title={name} slug={publicSlug} />
       <ActionDialog
         trigger={<AdminButton variant="danger">Remove listing</AdminButton>}
         title="Remove listing permanently?"
@@ -98,7 +100,7 @@ export function EntityActions({
         confirmLabel="Remove listing"
         tone="danger"
         requireReason
-        onConfirm={() => commitDecision(kind, id, "Removed", "Removed", `${id} removed`, "danger")}
+        onConfirm={(reason) => void commitDecision(kind, id, "Removed", "Removed", `${id} removed`, "danger", reason)}
       />
     </div>;
   }
@@ -111,7 +113,7 @@ export function EntityActions({
         description={`${name} will regain permission to publish and manage marketplace listings.`}
         confirmLabel="Restore selling access"
         requireReason
-        onConfirm={() => setStatus(kind, id, "Verified", `${id} selling access restored`)}
+        onConfirm={(reason) => void setStatus(kind, id, "Verified", `${id} selling access restored`, reason)}
       />;
     }
 
@@ -122,7 +124,7 @@ export function EntityActions({
       confirmLabel="Suspend selling access"
       tone="danger"
       requireReason
-      onConfirm={() => setStatus(kind, id, "Suspended", `${id} suspended`)}
+      onConfirm={(reason) => void setStatus(kind, id, "Suspended", `${id} suspended`, reason)}
     />;
   }
 
@@ -133,7 +135,7 @@ export function EntityActions({
       description={`${name} will regain account access.`}
       confirmLabel="Reactivate account"
       requireReason
-      onConfirm={() => setStatus(kind, id, "Active", `${id} reactivated`)}
+      onConfirm={(reason) => void setStatus(kind, id, "Active", `${id} reactivated`, reason)}
     />;
   }
 
@@ -144,12 +146,12 @@ export function EntityActions({
     confirmLabel="Suspend account"
     tone="danger"
     requireReason
-    onConfirm={() => setStatus(kind, id, "Suspended", `${id} suspended`)}
+    onConfirm={(reason) => void setStatus(kind, id, "Suspended", `${id} suspended`, reason)}
   />;
 }
 
 export function MoveListingToReviewAction({ id, status }: { id: string; status: string }) {
-  const { getStatus, getDecision, setStatus } = useAdminDemo();
+  const { getStatus, getDecision, setStatus } = useAdminData();
   const currentStatus = getStatus("listing", id, status);
   const decision = getDecision("listing", id);
 
@@ -169,11 +171,6 @@ export function MoveListingToReviewAction({ id, status }: { id: string; status: 
     description="This is an operational queue change, not a final moderation decision."
     confirmLabel="Move to review"
     requireReason
-    onConfirm={() => setStatus("listing", id, "Review", `${id} moved to review`)}
+    onConfirm={(reason) => void setStatus("listing", id, "Review", `${id} moved to review`, reason)}
   />;
-}
-
-export function MockAction({ label, message, tone = "info" }: { label: string; message: string; tone?: "success" | "danger" | "info" }) {
-  const { toast } = useAdminDemo();
-  return <button type="button" onClick={() => toast(label, message, tone)} className="rounded-lg border border-slate-300 px-3 py-2.5 text-left text-xs font-bold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2">{label}</button>;
 }
