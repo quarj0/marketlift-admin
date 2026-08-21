@@ -8,8 +8,9 @@ import { apiRequest } from "@/lib/api-client";
 import { useAdminData } from "@/components/admin/admin-data-provider";
 import type { AdminArea } from "@/lib/admin-access";
 import type { DashboardCounts } from "@/types/admin";
+import { releaseFeatures } from "@/lib/release-features";
 
-type Item={label:string;href:string;icon:ComponentType<SVGProps<SVGSVGElement>&{size?:number}>;area:AdminArea;badge?:(counts:DashboardCounts)=>number};
+type Item={label:string;href:string;icon:ComponentType<SVGProps<SVGSVGElement>&{size?:number}>;area:AdminArea;badge?:(counts:DashboardCounts)=>number;upcoming?:boolean};
 const sections:{label:string;items:Item[]}[] = [
   { label: "Overview", items: [{ label: "Dashboard", href: "/dashboard", icon: Icons.dashboard, area:"dashboard" }] },
   { label: "Marketplace", items: [
@@ -20,13 +21,13 @@ const sections:{label:string;items:Item[]}[] = [
   ]},
   { label: "Trust & Safety", items: [
     { label: "Moderation", href: "/moderation", icon: Icons.shield, area:"moderation", badge:(c)=>c.listingsUnderReview },
-    { label: "Verifications", href: "/verifications", icon: Icons.verify, area:"verifications", badge:(c)=>c.pendingVerifications },
+    { label: "Verifications", href: "/verifications", icon: Icons.verify, area:"verifications", badge:(c)=>c.pendingVerifications, upcoming:!releaseFeatures.cpfVerification },
     { label: "Reports", href: "/reports", icon: Icons.alert, area:"reports", badge:(c)=>c.openReports },
   ]},
   { label: "Revenue", items: [
-    { label: "Subscriptions", href: "/subscriptions", icon: Icons.credit, area:"subscriptions" },
-    { label: "Payments", href: "/payments", icon: Icons.money, area:"payments", badge:(c)=>c.failedPayments },
-    { label: "Promotions", href: "/promotions", icon: Icons.megaphone, area:"promotions" },
+    { label: "Subscriptions", href: "/subscriptions", icon: Icons.credit, area:"subscriptions", upcoming:!releaseFeatures.payments },
+    { label: "Payments", href: "/payments", icon: Icons.money, area:"payments", badge:(c)=>c.failedPayments, upcoming:!releaseFeatures.payments },
+    { label: "Promotions", href: "/promotions", icon: Icons.megaphone, area:"promotions", upcoming:!releaseFeatures.payments },
   ]},
   { label: "Operations", items: [
     { label: "Analytics", href: "/analytics", icon: Icons.chart, area:"analytics" },
@@ -51,7 +52,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     <nav aria-label="Primary administration navigation" className="flex-1 overflow-y-auto px-3 py-4 [scrollbar-width:none]">
       {sections.map((section)=>{const items=section.items.filter((item)=>canAccess(item.area));if(!items.length)return null;return <div key={section.label} className="mb-5">
         <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-[.13em] text-slate-500">{section.label}</div>
-        <div className="space-y-0.5">{items.map((item)=>{const active=pathname===item.href||pathname.startsWith(`${item.href}/`);const Icon=item.icon;const count=item.badge?.(dashboard.counts)||0;return <SafeLink key={item.href} href={item.href} onClick={onNavigate} aria-current={active?"page":undefined} className={`group flex h-10 items-center gap-3 rounded-lg px-3 text-[13px] font-semibold transition ${active?"bg-emerald-500/12 text-emerald-300":"text-slate-400 hover:bg-white/5 hover:text-slate-200"}`}><Icon size={18} className={active?"text-emerald-400":"text-slate-500 group-hover:text-slate-300"}/><span className="flex-1">{item.label}</span>{count>0&&<span aria-label={`${count} items need attention`} className={`rounded-full px-1.5 py-0.5 text-[10px] font-black ${active?"bg-emerald-400/15 text-emerald-300":"bg-white/7 text-slate-400"}`}>{count>99?"99+":count}</span>}</SafeLink>})}</div>
+        <div className="space-y-0.5">{items.map((item)=>{const active=pathname===item.href||pathname.startsWith(`${item.href}/`);const Icon=item.icon;const count=item.upcoming?0:item.badge?.(dashboard.counts)||0;return <SafeLink key={item.href} href={item.href} onClick={onNavigate} aria-current={active?"page":undefined} className={`group flex h-10 items-center gap-3 rounded-lg px-3 text-[13px] font-semibold transition ${active?"bg-emerald-500/12 text-emerald-300":"text-slate-400 hover:bg-white/5 hover:text-slate-200"}`}><Icon size={18} className={active?"text-emerald-400":"text-slate-500 group-hover:text-slate-300"}/><span className="flex-1">{item.label}</span>{item.upcoming?<span className="rounded-full bg-amber-400/10 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wide text-amber-300">Upcoming</span>:count>0&&<span aria-label={`${count} items need attention`} className={`rounded-full px-1.5 py-0.5 text-[10px] font-black ${active?"bg-emerald-400/15 text-emerald-300":"bg-white/7 text-slate-400"}`}>{count>99?"99+":count}</span>}</SafeLink>})}</div>
       </div>})}
     </nav>
     <div className="border-t border-white/8 p-3">

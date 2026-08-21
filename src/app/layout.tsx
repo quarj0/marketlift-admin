@@ -1,10 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
-import { Figtree, Geist_Mono } from "next/font/google";
 import "./globals.css";
-
-const figtree = Figtree({ variable: "--font-figtree", subsets: ["latin"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: { default: "Marketlift Admin", template: "%s | Marketlift Admin" },
@@ -22,7 +18,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html data-scroll-behavior="smooth" lang="en" className={`${figtree.variable} ${geistMono.variable} antialiased`}>
+    <html data-scroll-behavior="smooth" lang="en" className="antialiased">
       <body>
         <a href="#admin-main-content" className="skip-link">Skip to main content</a>
         {children}

@@ -55,15 +55,15 @@ export default function LoginPage() {
             Operate Marketlift with the same product rules users see.
           </h1>
           <p className="mt-5 max-w-lg text-sm leading-7 text-slate-300">
-            Moderate marketplace risk, manage selling capacity, review verification signals and monitor Marketlift service payments from one separate admin console.
+            Moderate marketplace risk, manage selling capacity, support customers and monitor platform operations from one separate admin console.
           </p>
 
           <div className="mt-8 grid gap-3 sm:grid-cols-2">
             {[
               ["One user account", "Selling is a capability, not a second account type."],
               ["Exceptional moderation", "Ordinary listings publish after automated validation."],
-              ["Optional verification", "Required only when risk or category policy needs it."],
-              ["Service-fee payments", "Seller subscriptions and listing promotions are managed here."],
+              ["Identity verification · Upcoming", "CPF and provider-backed identity workflows remain dormant for this release."],
+              ["Service payments · Upcoming", "Subscriptions, checkout and paid promotions will launch after provider integration."],
             ].map(([title, body]) => (
               <div key={title} className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur">
                 <p className="text-sm font-black">{title}</p>

@@ -1,6 +1,6 @@
 # Marketlift Admin
 
-Standalone administration frontend for Marketlift (`dash.marketlift.br`).
+Standalone administration frontend for Marketlift (`admin.marketlift.com.br`).
 
 ## Stack
 
@@ -18,17 +18,17 @@ Standalone administration frontend for Marketlift (`dash.marketlift.br`).
 - Listings and listing detail
 - Categories
 - Moderation
-- Seller verification and review detail
+- Seller verification and review detail (**Upcoming**)
 - User reports and investigation detail
-- Subscription plans
-- Payments and transaction monitoring
-- Promotions
+- Subscription plans (**Upcoming**)
+- Payments and transaction monitoring (**Upcoming**)
+- Promotions (**Upcoming**)
 - Analytics
 - Support
 - Immutable activity/audit log UI
 - Platform settings
 
-The current data layer is mocked in `src/data/mock-data.ts` so the frontend can be reviewed independently before Django API integration.
+The console uses the authenticated Marketlift REST and GraphQL APIs. Payments, paid subscriptions, listing promotions and CPF verification remain behind disabled release flags until their providers complete production certification.
 
 ## Run locally
 
@@ -38,3 +38,7 @@ pnpm dev
 ```
 
 Then open `http://localhost:3000`. The root route redirects to `/dashboard`; `/login` shows the admin sign-in experience.
+
+For production, use `.env.production.example`, deploy this application at
+`https://admin.marketlift.com.br`, and keep both provider feature flags set to
+`false` until the backend providers are certified.

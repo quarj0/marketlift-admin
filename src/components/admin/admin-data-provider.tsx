@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { usePathname, useRouter } from "next/navigation";
 import { API_BASE_URL, MarketliftApiError, apiRequest, graphqlRequest } from "@/lib/api-client";
 import { canAccessAdminArea, type AdminArea } from "@/lib/admin-access";
+import { releaseFeatures } from "@/lib/release-features";
 import type {
   ActivityRecord, AdminDashboardRecord, AdminListingRecord, AdminNotificationRecord, AdminPaymentRecord, AdminReportRecord,
   AdminSellerRecord, AdminUserRecord, AdminVerificationRecord, CategoryRecord, ModerationRecord, PaymentSummary, PlanRecord,
@@ -125,23 +126,23 @@ export function AdminDataProvider({children}:{children:ReactNode}) {
         safeQuery<DashboardQueryData>(DASHBOARD_QUERY), safeQuery<NotificationQueryData>(NOTIFICATION_QUERY),
         allowed("users")?safeQuery<UserQueryData>(USER_QUERY):null,
         allowed("sellers")?safeQuery<SellerQueryData>(SELLER_QUERY):null,
-        allowed("subscriptions")?safeQuery<BillingQueryData>(BILLING_QUERY):null,
+        releaseFeatures.payments&&allowed("subscriptions")?safeQuery<BillingQueryData>(BILLING_QUERY):null,
         allowed("listings")?safeQuery<ListingQueryData>(LISTING_QUERY):null,
         allowed("moderation")?safeQuery<ModerationQueryData>(MODERATION_QUERY):null,
         allowed("reports")?safeQuery<ReportQueryData>(REPORT_QUERY):null,
-        allowed("verifications")?safeQuery<VerificationQueryData>(VERIFICATION_QUERY):null,
-        allowed("payments")?safeQuery<PaymentQueryData>(PAYMENT_QUERY):null,
+        releaseFeatures.cpfVerification&&allowed("verifications")?safeQuery<VerificationQueryData>(VERIFICATION_QUERY):null,
+        releaseFeatures.payments&&allowed("payments")?safeQuery<PaymentQueryData>(PAYMENT_QUERY):null,
         allowed("support")?safeQuery<SupportQueryData>(SUPPORT_QUERY):null,
         allowed("categories")?safeQuery<CategoryQueryData>(CATEGORY_QUERY):null,
         allowed("activity")?safeQuery<AuditQueryData>(AUDIT_QUERY):null,
-        allowed("promotions")?safeQuery<PromotionQueryData>(PROMOTION_QUERY):null,
+        releaseFeatures.payments&&allowed("promotions")?safeQuery<PromotionQueryData>(PROMOTION_QUERY):null,
       ]);
       const rawUsers=usersRes?.adminUsers||[]; const rawSubs=billingRes?.adminSubscriptions||[]; const rawListings=listingRes?.adminListings||[]; const rawReports=reportRes?.reports||[];
       const subscriptions:SubscriptionRecord[]=rawSubs.map((s)=>({id:s.id,sellerId:s.sellerId,sellerName:s.sellerName,planName:s.plan.name,billingCycle:titleCase(s.billingCycle),status:uiStatus(s.status),periodEnd:fmtDate(s.currentPeriodEnd),promotionCreditsRemaining:s.promotionCreditsRemaining}));
       const subBySeller=new Map(rawSubs.map((s)=>[s.sellerId,s] as const));
       const userById=new Map(rawUsers.map((u)=>[u.id,u] as const));
       const users:AdminUserRecord[]=rawUsers.map((u)=>({id:u.id,name:u.name,email:u.email,phone:u.phone||"—",type:u.staff?"Administrator":u.sellerId?"Buyer & Seller":"Buyer",status:u.suspended?"Suspended":u.active?"Active":"Pending",joined:fmtDay(u.joinedAt),location:locationText(u.location||undefined),avatar:initials(u.name),sellerId:u.sellerId||null,adminRole:u.adminRole||null}));
-      const sellers:AdminSellerRecord[]=(sellerRes?.adminSellers||[]).map((s)=>{const u=userById.get(s.userId); const sub=subBySeller.get(s.id); return {id:s.id,publicSellerId:s.id,userId:s.userId,name:s.name,owner:u?.name||s.email,plan:sub?.plan?.name||"Free",status:s.suspended?"Suspended":s.verified?"Verified":"Pending",listings:s.listingCount,rating:"—",revenue:"—",location:locationText(u?.location||undefined),joined:fmtDay(s.activatedAt),avatar:""};});
+      const sellers:AdminSellerRecord[]=(sellerRes?.adminSellers||[]).map((s)=>{const u=userById.get(s.userId); const sub=subBySeller.get(s.id); return {id:s.id,publicSellerId:s.id,userId:s.userId,name:s.name,owner:u?.name||s.email,plan:sub?.plan?.name||"Free",status:s.suspended?"Suspended":releaseFeatures.cpfVerification&&s.verified?"Verified":"Active",listings:s.listingCount,rating:"—",revenue:"—",location:locationText(u?.location||undefined),joined:fmtDay(s.activatedAt),avatar:""};});
       const reports:AdminReportRecord[]=rawReports.map((r)=>({id:r.id,reference:r.reference,type:titleCase(r.targetType),target:r.targetLabel||r.targetId,targetId:r.targetId,reporter:r.reporterName||"—",status:uiStatus(r.status),created:fmtDate(r.createdAt),priority:titleCase(r.priority),reason:titleCase(r.reason),statement:r.statement||"",assignedTo:r.assignedTo||"—",internalNote:r.internalNote||"",decisionReason:r.decisionReason||""}));
       const reportCountByListing=new Map<string,number>(); rawReports.filter((r)=>r.targetType==="listing").forEach((r)=>reportCountByListing.set(r.targetId,(reportCountByListing.get(r.targetId)||0)+1));
       const listings:AdminListingRecord[]=rawListings.map((l)=>({id:l.id,publicId:l.id,publicSlug:l.slug,publicSellerId:l.seller.id,title:l.title,seller:l.seller.name,category:l.categoryName,categorySlug:l.category,price:l.price==null?"Contact seller":money(Number(l.price)),priceValue:l.price==null?null:Number(l.price),images:(l.images||[]).map(mediaUrl),image:mediaUrl(l.images?.[0]),description:l.description,condition:l.condition||"—",location:locationText(l.location||undefined),status:l.sellerDeletedAt?"Deleted":uiStatus(l.status),rawStatus:l.status,sellerDeletedAt:l.sellerDeletedAt||"",created:fmtDate(l.createdAt),reports:reportCountByListing.get(l.id)||0,views:l.views||0,favorites:l.favorites||0,inquiries:l.inquiries||0,featured:Boolean(l.featured),urgent:Boolean(l.urgent)}));

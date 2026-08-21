@@ -11,6 +11,7 @@ import { PublicSellerLink } from "@/components/admin/public-marketplace-link";
 import { useAdminData } from "@/components/admin/admin-data-provider";
 import { graphqlRequest } from "@/lib/api-client";
 import { Icons } from "@/lib/icons";
+import { releaseFeatures } from "@/lib/release-features";
 
 type Seller={id:string;userId:string;name:string;email:string;sellerType:string;verified:boolean;suspended:boolean;activatedAt:string;suspendedAt:string|null;suspensionReason:string|null;listingCount:number};
 type User={id:string;name:string;location:{state:string;stateCode:string;city:string;district:string|null}};
@@ -25,7 +26,7 @@ export default function SellerPage(){
   useEffect(()=>{const timeoutId=window.setTimeout(()=>{void load()},0);return()=>window.clearTimeout(timeoutId)},[load]);
   if(loading)return <div className="rounded-xl border bg-white p-8 text-sm text-slate-500">Loading seller…</div>;
   if(!seller)return <div className="rounded-xl border bg-white p-8 text-center"><h1 className="text-lg font-black">Seller unavailable</h1><SafeLink href="/sellers" className="mt-4 inline-flex text-sm font-bold text-emerald-700">Back to sellers</SafeLink></div>;
-  const status=seller.suspended?"Suspended":seller.verified?"Verified":"Pending"; const sellerListings=listings.filter((x)=>x.publicSellerId===seller.id); const subscription=subscriptions.find((x)=>x.sellerId===seller.id);
+  const status=seller.suspended?"Suspended":releaseFeatures.cpfVerification&&seller.verified?"Verified":"Active"; const sellerListings=listings.filter((x)=>x.publicSellerId===seller.id); const subscription=subscriptions.find((x)=>x.sellerId===seller.id);
   return <div className="space-y-6"><SafeLink href="/sellers" className="text-xs font-bold text-slate-500">← Back to sellers</SafeLink>
     <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-5 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-center gap-3"><MarketplaceImage src="" alt={`${seller.name} profile image`} className="size-12 rounded-full border object-cover" fallbackClassName="size-12 rounded-full border"/><div><div className="flex items-center gap-2"><h1 className="text-xl font-black">{seller.name}</h1><LiveStatusBadge kind="seller" id={seller.id} status={status}/></div><p className="mt-1 text-xs text-slate-500">{seller.email} · {seller.id} · {location(owner)}</p></div></div><div className="flex flex-wrap gap-2"><PublicSellerLink sellerId={seller.id} sellerName={seller.name}/><EntityActions kind="seller" id={seller.id} name={seller.name} status={status}/></div></div>
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{[["Current plan",subscription?.planName||"—"],["Listings",String(seller.listingCount)],["Seller type",seller.sellerType.replace(/_/g," ")],["Status",status]].map(([label,value])=><div className="rounded-xl border border-slate-200 bg-white p-4" key={label}><p className="text-xs text-slate-500">{label}</p><strong className="mt-2 block text-xl font-black capitalize">{value}</strong></div>)}</div>
