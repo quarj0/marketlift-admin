@@ -42,7 +42,7 @@ export default function LoginPage() {
             width={1105}
             height={195}
             priority
-            className="h-auto w-[250px]"
+            className="h-auto w-62.5"
           />
           <span className="mt-4 inline-flex rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[10px] font-black uppercase tracking-[.2em] text-slate-300">
             Admin console
@@ -86,7 +86,7 @@ export default function LoginPage() {
                 width={1105}
                 height={195}
                 priority
-                className="h-auto w-[185px]"
+                className="h-auto w-46.25"
               />
             </div>
           </div>
