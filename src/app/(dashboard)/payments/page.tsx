@@ -1,4 +1,171 @@
 "use client";
-import {SafeLink} from "@/components/ui/safe-link";import {PageHeader} from "@/components/ui/page-header";import {DataTable} from "@/components/ui/data-table";import {StatusBadge} from "@/components/ui/status-badge";import {AdminButton} from "@/components/ui/admin-button";import {Icons} from "@/lib/icons";import {exportCsv} from "@/lib/csv-export";import {useAdminData} from "@/components/admin/admin-data-provider";
-const fmt=(value:number,currency:string,locale?:string)=>new Intl.NumberFormat(locale||"en",{style:"currency",currency}).format(value).replace(/\u00a0/g," ");
-export default function PaymentsPage(){const {payments,paymentSummary,markets}=useAdminData();const marketByCurrency=new Map(markets.map(m=>[m.currency,m] as const));const paidByCurrency=new Map<string,number>();const refundedByCurrency=new Map<string,number>();for(const p of payments){if(p.status==="Paid")paidByCurrency.set(p.currency,(paidByCurrency.get(p.currency)||0)+p.amountValue);if(p.status==="Refunded")refundedByCurrency.set(p.currency,(refundedByCurrency.get(p.currency)||0)+p.amountValue)}const volumeText=[...paidByCurrency].map(([currency,value])=>fmt(value,currency,marketByCurrency.get(currency)?.locale)).join(" · ")||"—";const refundText=[...refundedByCurrency].map(([currency,value])=>fmt(value,currency,marketByCurrency.get(currency)?.locale)).join(" · ")||"—";return <div className="space-y-6"><PageHeader title="Payments" description="Monitor Marketlift subscription and promotion transactions. Monetary totals are kept separate by currency." actions={<AdminButton variant="outline" onClick={()=>exportCsv("marketlift-payments.csv",["ID","Reference","Seller","Purpose","Method","Amount","Currency","Status","Provider","Provider order","Date"],payments.map(p=>[p.id,p.reference,p.seller,p.purpose,p.method,p.amount,p.currency,p.status,p.provider,p.providerOrderId,p.date]))}><Icons.download size={16}/> Export</AdminButton>}/><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{[["Paid volume",volumeText,`${paymentSummary.paidCount} paid`],["Refunded",refundText,"Recorded refunds"],["Success rate",`${paymentSummary.successRate.toFixed(1)}%`,`${paymentSummary.failedCount} failed`],["Pending",String(paymentSummary.pendingCount),"Awaiting completion"]].map(([a,b,c])=><div key={a} className="rounded-xl border border-slate-200 bg-white p-4"><p className="text-xs font-semibold text-slate-500">{a}</p><strong className="mt-2 block text-lg font-black">{b}</strong><p className="mt-1 text-[10px] text-slate-400">{c}</p></div>)}</div><DataTable rows={payments} searchText={p=>`${p.id} ${p.reference} ${p.seller} ${p.type} ${p.method} ${p.currency} ${p.status}`} searchPlaceholder="Search payment, seller or transaction ID…" statusOf={p=>p.status} statuses={["Paid","Pending","Failed","Refunded","Cancelled"]} selectedLabel="payments" columns={[{key:"payment",label:"Payment",cell:p=><div><div className="font-bold text-slate-900">{p.reference||p.id}</div><div className="mt-0.5 text-[10px] text-slate-400">{p.seller} · {p.id}</div></div>},{key:"type",label:"Product",cell:p=>p.type},{key:"amount",label:"Amount",cell:p=><div><strong className="text-slate-800">{p.amount}</strong><div className="text-[9px] font-bold text-slate-400">{p.currency}</div></div>},{key:"method",label:"Method",cell:p=>p.method},{key:"date",label:"Date",cell:p=>p.date},{key:"status",label:"Status",cell:p=><StatusBadge status={p.status}/>},{key:"action",label:"",cell:p=><SafeLink href={`/payments/${p.id}`} aria-label={`View payment ${p.reference||p.id}`} className="grid size-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><Icons.chevronRight size={16}/></SafeLink>}]}/></div>}
+import { SafeLink } from "@/components/ui/safe-link";
+import { PageHeader } from "@/components/ui/page-header";
+import { DataTable } from "@/components/ui/data-table";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { AdminButton } from "@/components/ui/admin-button";
+import { Icons } from "@/lib/icons";
+import { exportCsv } from "@/lib/csv-export";
+import { useAdminData } from "@/components/admin/admin-data-provider";
+const fmt = (value: number, currency: string, locale?: string) =>
+  new Intl.NumberFormat(locale || "en", { style: "currency", currency })
+    .format(value)
+    .replace(/\u00a0/g, " ");
+export default function PaymentsPage() {
+  const { payments, paymentSummary, markets } = useAdminData();
+  const marketByCurrency = new Map(
+    markets.map((m) => [m.currency, m] as const),
+  );
+  const volumeText =
+    paymentSummary.currencyTotals
+      .filter((row) => row.paidTotal > 0)
+      .map((row) =>
+        fmt(
+          row.paidTotal,
+          row.currency,
+          marketByCurrency.get(row.currency)?.locale,
+        ),
+      )
+      .join(" · ") || "—";
+  const refundText =
+    paymentSummary.currencyTotals
+      .filter((row) => row.refundedTotal > 0)
+      .map((row) =>
+        fmt(
+          row.refundedTotal,
+          row.currency,
+          marketByCurrency.get(row.currency)?.locale,
+        ),
+      )
+      .join(" · ") || "—";
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="Payments"
+        description="Monitor Marketlift subscription and promotion transactions. Monetary totals are kept separate by currency."
+        actions={
+          <AdminButton
+            variant="outline"
+            onClick={() =>
+              exportCsv(
+                "marketlift-payments.csv",
+                [
+                  "ID",
+                  "Reference",
+                  "Seller",
+                  "Purpose",
+                  "Method",
+                  "Amount",
+                  "Currency",
+                  "Status",
+                  "Provider",
+                  "Provider order",
+                  "Date",
+                ],
+                payments.map((p) => [
+                  p.id,
+                  p.reference,
+                  p.seller,
+                  p.purpose,
+                  p.method,
+                  p.amount,
+                  p.currency,
+                  p.status,
+                  p.provider,
+                  p.providerOrderId,
+                  p.date,
+                ]),
+              )
+            }
+          >
+            <Icons.download size={16} /> Export
+          </AdminButton>
+        }
+      />
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {[
+          ["Paid volume", volumeText, `${paymentSummary.paidCount} paid`],
+          ["Refunded", refundText, "Recorded refunds"],
+          [
+            "Success rate",
+            `${paymentSummary.successRate.toFixed(1)}%`,
+            `${paymentSummary.failedCount} failed`,
+          ],
+          [
+            "Pending",
+            String(paymentSummary.pendingCount),
+            "Awaiting completion",
+          ],
+        ].map(([a, b, c]) => (
+          <div
+            key={a}
+            className="rounded-xl border border-slate-200 bg-white p-4"
+          >
+            <p className="text-xs font-semibold text-slate-500">{a}</p>
+            <strong className="mt-2 block text-lg font-black">{b}</strong>
+            <p className="mt-1 text-[10px] text-slate-400">{c}</p>
+          </div>
+        ))}
+      </div>
+      <DataTable
+        rows={payments}
+        searchText={(p) =>
+          `${p.id} ${p.reference} ${p.seller} ${p.type} ${p.method} ${p.currency} ${p.status}`
+        }
+        searchPlaceholder="Search payment, seller or transaction ID…"
+        statusOf={(p) => p.status}
+        statuses={["Paid", "Pending", "Failed", "Refunded", "Cancelled"]}
+        selectedLabel="payments"
+        columns={[
+          {
+            key: "payment",
+            label: "Payment",
+            cell: (p) => (
+              <div>
+                <div className="font-bold text-slate-900">
+                  {p.reference || p.id}
+                </div>
+                <div className="mt-0.5 text-[10px] text-slate-400">
+                  {p.seller} · {p.id}
+                </div>
+              </div>
+            ),
+          },
+          { key: "type", label: "Product", cell: (p) => p.type },
+          {
+            key: "amount",
+            label: "Amount",
+            cell: (p) => (
+              <div>
+                <strong className="text-slate-800">{p.amount}</strong>
+                <div className="text-[9px] font-bold text-slate-400">
+                  {p.currency}
+                </div>
+              </div>
+            ),
+          },
+          { key: "method", label: "Method", cell: (p) => p.method },
+          { key: "date", label: "Date", cell: (p) => p.date },
+          {
+            key: "status",
+            label: "Status",
+            cell: (p) => <StatusBadge status={p.status} />,
+          },
+          {
+            key: "action",
+            label: "",
+            cell: (p) => (
+              <SafeLink
+                href={`/payments/${p.id}`}
+                aria-label={`View payment ${p.reference || p.id}`}
+                className="grid size-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"
+              >
+                <Icons.chevronRight size={16} />
+              </SafeLink>
+            ),
+          },
+        ]}
+      />
+    </div>
+  );
+}
