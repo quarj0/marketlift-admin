@@ -15,7 +15,7 @@ export function MarketliftAdminLogo({ onNavigate }: { onNavigate?: () => void })
         width={1105}
         height={195}
         priority
-        className="h-auto w-[145px] object-contain sm:w-[158px]"
+        className="h-auto w-36.25 object-contain sm:w-39.5"
       />
       <span className="hidden rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[9px] font-black uppercase tracking-[.18em] text-slate-300 xl:inline-flex">
         Admin

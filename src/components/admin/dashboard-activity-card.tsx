@@ -1,3 +1,54 @@
 "use client";
-import {useAdminData} from "@/components/admin/admin-data-provider";
-export function DashboardActivityCard(){const {activityLog}=useAdminData();const groups=Array.from(activityLog.reduce((map,item)=>map.set(item.targetType,(map.get(item.targetType)||0)+1),new Map<string,number>()).entries()).sort((a:[string,number],b:[string,number])=>b[1]-a[1]).slice(0,6);const max=Math.max(...groups.map(([,n])=>n),1);return <div className="rounded-2xl border border-slate-200 bg-white p-5"><div><h2 className="text-sm font-black text-slate-900">Administrative activity</h2><p className="mt-0.5 text-xs text-slate-500">Loaded audit events grouped by target</p></div><div className="mt-6 space-y-4">{groups.map(([label,count])=><div key={label}><div className="mb-1.5 flex justify-between text-xs"><span className="font-semibold capitalize text-slate-600">{label.replace(/_/g," ")}</span><strong>{count}</strong></div><div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-emerald-500" style={{width:`${Math.max(4,Math.round((count/max)*100))}%`}}/></div></div>)}{groups.length===0&&<p className="rounded-xl bg-slate-50 p-6 text-center text-xs text-slate-500">No audit events are available.</p>}</div></div>}
+import { useAdminData } from "@/components/admin/admin-data-provider";
+export function DashboardActivityCard() {
+  const { activityLog } = useAdminData();
+  const groups = Array.from(
+    activityLog
+      .reduce(
+        (map, item) =>
+          map.set(item.targetType, (map.get(item.targetType) || 0) + 1),
+        new Map<string, number>(),
+      )
+      .entries(),
+  )
+    .sort((a: [string, number], b: [string, number]) => b[1] - a[1])
+    .slice(0, 6);
+  const max = Math.max(...groups.map(([, n]) => n), 1);
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-5">
+      <div>
+        <h2 className="text-sm font-black text-slate-900">
+          Administrative activity
+        </h2>
+        <p className="mt-0.5 text-xs text-slate-500">
+          Loaded audit events grouped by target
+        </p>
+      </div>
+      <div className="mt-6 space-y-4">
+        {groups.map(([label, count]) => (
+          <div key={label}>
+            <div className="mb-1.5 flex justify-between text-xs">
+              <span className="font-semibold capitalize text-slate-600">
+                {label.replace(/_/g, " ")}
+              </span>
+              <strong>{count}</strong>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+              <div
+                className="h-full rounded-full bg-emerald-500"
+                style={{
+                  width: `${Math.max(4, Math.round((count / max) * 100))}%`,
+                }}
+              />
+            </div>
+          </div>
+        ))}
+        {groups.length === 0 && (
+          <p className="rounded-xl bg-slate-50 p-6 text-center text-xs text-slate-500">
+            No audit events are available.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
