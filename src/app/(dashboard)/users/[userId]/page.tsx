@@ -11,7 +11,7 @@ import { Icons } from "@/lib/icons";
 
 type User={id:string;name:string;email:string;phone:string|null;active:boolean;staff:boolean;suspended:boolean;joinedAt:string;location:{state:string;stateCode:string;city:string;district:string|null};sellerId:string|null;adminRole:string|null};
 const QUERY=`query AdminUserDetail($id:ID!){adminUser(id:$id){id name email phone active staff suspended joinedAt location{state stateCode city district} sellerId adminRole}}`;
-const fmt=(value:string)=>new Intl.DateTimeFormat("pt-BR",{dateStyle:"medium",timeStyle:"short"}).format(new Date(value));
+const fmt=(value:string)=>new Intl.DateTimeFormat("en",{dateStyle:"medium",timeStyle:"short"}).format(new Date(value));
 const loc=(u:User)=>[u.location.district,u.location.city,u.location.stateCode||u.location.state].filter(Boolean).join(", ")||"—";
 const initials=(name:string)=>name.split(/\s+/).filter(Boolean).slice(0,2).map((x)=>x[0]?.toUpperCase()).join("")||"ML";
 

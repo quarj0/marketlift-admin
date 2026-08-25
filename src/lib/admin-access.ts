@@ -1,5 +1,5 @@
 export type AdminRole = "super_admin" | "admin" | "moderator" | "support" | "finance";
-export type AdminArea = "dashboard" | "users" | "sellers" | "listings" | "categories" | "moderation" | "verifications" | "reports" | "subscriptions" | "payments" | "promotions" | "analytics" | "support" | "activity" | "settings";
+export type AdminArea = "dashboard" | "users" | "sellers" | "listings" | "categories" | "moderation" | "verifications" | "reports" | "subscriptions" | "payments" | "promotions" | "markets" | "analytics" | "support" | "activity" | "settings";
 
 const access: Record<AdminArea, AdminRole[]> = {
   dashboard: ["super_admin", "admin", "moderator", "support", "finance"],
@@ -13,6 +13,7 @@ const access: Record<AdminArea, AdminRole[]> = {
   subscriptions: ["super_admin", "admin", "finance"],
   payments: ["super_admin", "admin", "finance"],
   promotions: ["super_admin", "admin", "finance"],
+  markets: ["super_admin", "admin", "finance"],
   analytics: ["super_admin", "admin", "moderator", "support", "finance"],
   support: ["super_admin", "admin", "support"],
   activity: ["super_admin", "admin", "moderator"],
@@ -32,5 +33,5 @@ export function canAccessAdminArea(role: string | null | undefined, area: AdminA
 
 export function areaForPath(pathname: string): AdminArea {
   const head = pathname.split("/").filter(Boolean)[0] || "dashboard";
-  return (["users","sellers","listings","categories","moderation","verifications","reports","subscriptions","payments","promotions","analytics","support","activity","settings"] as AdminArea[]).includes(head as AdminArea) ? head as AdminArea : "dashboard";
+  return (["users","sellers","listings","categories","moderation","verifications","reports","subscriptions","payments","promotions","markets","analytics","support","activity","settings"] as AdminArea[]).includes(head as AdminArea) ? head as AdminArea : "dashboard";
 }

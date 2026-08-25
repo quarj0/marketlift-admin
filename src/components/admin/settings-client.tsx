@@ -16,7 +16,7 @@ type Tab="Platform"|"Marketplace"|"Trust & safety"|"Notifications"|"Admin access
 const CONFIG_QUERY=`query PlatformConfiguration { platformConfiguration { marketplaceName supportEmail allowNewRegistrations allowSellerActivation maintenanceMode automatedListingFlagging sellerVerificationRequired defaultListingDurationDays maxListingImages highRiskThreshold adminEmailOperationalAlerts adminVerificationQueueAlerts adminPaymentFailureAlerts } }`;
 const ACCESS_QUERY=`query AdminAccess { adminStaff(limit:100){id name email active suspended joinedAt adminRole} adminInvitations(includeInactive:true,limit:100){id email role active invitedBy expiresAt acceptedAt revokedAt} }`;
 const roles=["admin","moderator","support","finance"] as const;
-const fmt=(value?:string|null)=>value?new Intl.DateTimeFormat("pt-BR",{dateStyle:"medium",timeStyle:"short"}).format(new Date(value)):"—";
+const fmt=(value?:string|null)=>value?new Intl.DateTimeFormat("en",{dateStyle:"medium",timeStyle:"short"}).format(new Date(value)):"—";
 
 function Switch({enabled,onChange,label,disabled=false}:{enabled:boolean;onChange:()=>void;label:string;disabled?:boolean}){return <button type="button" role="switch" aria-checked={enabled} aria-label={label} disabled={disabled} onClick={onChange} className={`relative h-7 w-12 shrink-0 rounded-full border transition disabled:cursor-not-allowed disabled:opacity-60 ${enabled?"border-emerald-600 bg-emerald-600":"border-slate-300 bg-slate-200"}`}><span className={`absolute top-1 size-5 rounded-full bg-white shadow-sm transition ${enabled?"left-6":"left-1"}`}/></button>}
 

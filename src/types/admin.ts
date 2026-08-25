@@ -1,11 +1,11 @@
 export type Status = "Active" | "Suspended" | "Pending" | "Verified" | "Review" | "Rejected" | "Removed" | "Deleted" | "Resolved" | "Dismissed" | "Open" | "Paid" | "Failed" | "Refunded" | "Expired" | "Draft" | "Paused" | "Sold" | "Cancelled" | "Closed" | "Past due";
 
 export type AdminUserRecord = { id:string; name:string; email:string; phone:string; type:string; status:Status; joined:string; location:string; avatar:string; sellerId:string|null; adminRole:string|null };
-export type AdminSellerRecord = { id:string; publicSellerId:string; userId:string; name:string; owner:string; plan:string; status:Status; listings:number; rating:string; revenue:string; location:string; joined:string; avatar:string };
+export type AdminSellerRecord = { id:string; publicSellerId:string; userId:string; name:string; owner:string; plan:string; status:Status; listings:number; rating:string; revenue:string; location:string; joined:string; avatar:string; countryCode:string };
 export type AdminListingRecord = { id:string; publicId:string; publicSlug:string; publicSellerId:string; title:string; seller:string; category:string; categorySlug:string; price:string; priceValue:number|null; images:string[]; image:string; description:string; condition:string; location:string; status:Status; rawStatus:string; sellerDeletedAt:string; created:string; reports:number; views:number; favorites:number; inquiries:number; featured:boolean; urgent:boolean };
 export type AdminReportRecord = { id:string; reference:string; type:string; target:string; targetId:string; reporter:string; status:Status; created:string; priority:string; reason:string; statement:string; assignedTo:string; internalNote:string; decisionReason:string };
-export type AdminVerificationRecord = { id:string; sellerId:string; seller:string; owner:string; document:string; submitted:string; status:Status; risk:string; cpfMasked:string; legalName:string; birthDate:string; documentFrontUrl:string; documentBackUrl:string; selfieUrl:string; flags:string[]; decisionNote:string };
-export type AdminPaymentRecord = { id:string; reference:string; sellerId:string; seller:string; type:string; purpose:string; method:string; status:Status; amount:string; amountValue:number; date:string; provider:string; providerOrderId:string; planId:string; listingId:string; promotionId:string };
+export type AdminVerificationRecord = { id:string; sellerId:string; seller:string; owner:string; document:string; submitted:string; status:Status; risk:string; identityCountryCode:string; identityType:string; identityMasked:string; identityLabel:string; cpfMasked:string; legalName:string; birthDate:string; documentFrontUrl:string; documentBackUrl:string; selfieUrl:string; flags:string[]; decisionNote:string };
+export type AdminPaymentRecord = { id:string; reference:string; sellerId:string; seller:string; type:string; purpose:string; method:string; status:Status; amount:string; amountValue:number; currency:string; date:string; provider:string; providerOrderId:string; planId:string; listingId:string; promotionId:string };
 export type SupportTicketRecord = { id:string; reference:string; user:string; subject:string; category:string; priority:string; status:Status; updated:string; assignedTo:string };
 export type CategoryRecord = { id:string; name:string; slug:string; listings:number; active:boolean; icon:string; subcategories:{id:string;name:string;icon:string;active:boolean}[] };
 export type PlanRecord = { id:string; name:string; price:string; priceValue:number; yearlyPrice:string; yearlyPriceValue:number; period:string; sellers:number; listings:number; featured:number; badge:string; active:boolean; visibilityWeight:number; recommended:boolean; features:string[] };
@@ -15,6 +15,14 @@ export type ActivityRecord = { id:string; admin:string; action:string; target:st
 export type ModerationRecord = { id:string; status:string; source:string; reviewReason:string; decisionReason:string; openedAt:string; decidedAt:string; decidedBy:string; listingId:string };
 export type PaymentSummary = { paidTotal:number; refundedTotal:number; paidCount:number; failedCount:number; pendingCount:number; successRate:number };
 export type VerificationSummary = { pending:number; review:number; verifiedToday:number; rejectedToday:number };
+
+export type AdminMarketRecord = {
+  code:string; countryName:string; locale:string; currency:string; currencySymbol:string; timezone:string;
+  paymentProvider:string; paymentMethods:string[]; identityProvider:string; identityLabel:string; identityKey:string; locationMode:string;
+  isEnabled:boolean; isDefault:boolean; sortOrder:number; pricingReady:boolean; pricingIssues:string[];
+};
+export type SellerPlanMarketPriceRecord = { marketCode:string; currency:string; planId:string; planName:string; monthlyPrice:number; yearlyPrice:number; active:boolean };
+export type PromotionMarketPriceRecord = { marketCode:string; currency:string; promotionId:string; promotionName:string; price:number; active:boolean };
 
 export type AdminNotificationRecord = { id:string; type:string; title:string; body:string; createdAt:string; read:boolean; href:string; data:Record<string,unknown> };
 export type DashboardCounts = { totalUsers:number; totalSellers:number; activeSellers:number; verifiedSellers:number; totalListings:number; publishedListings:number; listingsUnderReview:number; rejectedListings:number; reportedListings:number; openReports:number; pendingVerifications:number; failedPayments:number; recordedPayments:number; openSupportTickets:number; paidSubscriptions:number };

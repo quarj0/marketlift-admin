@@ -13,7 +13,7 @@ import type { Status } from "@/types/admin";
 type Report={id:string;reference:string;targetType:string;targetId:string;targetLabel:string;reason:string;statement:string;priority:string;status:string;reporterName:string|null;assignedTo:string|null;internalNote:string|null;decisionReason:string|null;createdAt:string;decidedAt:string|null};
 const QUERY=`query AdminReportDetail($id:String!){report(id:$id){id reference targetType targetId targetLabel reason statement priority status reporterName assignedTo internalNote decisionReason createdAt decidedAt}}`;
 const title=(v?:string|null)=>v?v.replace(/_/g," ").replace(/\b\w/g,(c)=>c.toUpperCase()):"—";
-const fmt=(v:string)=>new Intl.DateTimeFormat("pt-BR",{dateStyle:"medium",timeStyle:"short"}).format(new Date(v));
+const fmt=(v:string)=>new Intl.DateTimeFormat("en",{dateStyle:"medium",timeStyle:"short"}).format(new Date(v));
 const uiStatus=(v:string):Status=>({open:"Open",review:"Review",resolved:"Resolved",dismissed:"Dismissed"}[v]||title(v)) as Status;
 
 export default function ReportDetailPage(){

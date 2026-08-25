@@ -62,7 +62,7 @@ export default function LoginPage() {
             {[
               ["One user account", "Selling is a capability, not a second account type."],
               ["Exceptional moderation", "Ordinary listings publish after automated validation."],
-              ["Identity verification · Upcoming", "CPF and provider-backed identity workflows remain dormant for this release."],
+              ["Identity verification · Upcoming", "Country-specific identity and provider-backed verification workflows remain dormant for this release."],
               ["Service payments · Upcoming", "Subscriptions, checkout and paid promotions will launch after provider integration."],
             ].map(([title, body]) => (
               <div key={title} className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur">

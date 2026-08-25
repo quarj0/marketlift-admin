@@ -18,12 +18,12 @@ export function UpcomingFeature({
           <Icon size={26} />
         </span>
         <h1 className="mt-5 text-2xl font-black text-slate-950">
-          {payment ? "Payments and paid seller tools" : "CPF seller verification"}
+          {payment ? "Payments and paid seller tools" : "Seller identity verification"}
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">
           {payment
             ? "Payment processing, paid subscriptions and listing promotions remain unavailable until the production payment-provider integration is certified."
-            : "CPF and identity-document collection remains unavailable until the specialist verification provider and privacy controls are certified."}
+            : "Identity-document collection remains unavailable until the specialist verification provider and privacy controls are certified."}
         </p>
         <div className="mt-6 rounded-xl border border-emerald-100 bg-emerald-50 p-4 text-sm leading-6 text-emerald-950">
           The backend also blocks creation and processing while this release flag is disabled. Existing implementation remains dormant for later integration.

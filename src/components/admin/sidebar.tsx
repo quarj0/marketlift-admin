@@ -34,7 +34,7 @@ const sections:{label:string;items:Item[]}[] = [
     { label: "Support", href: "/support", icon: Icons.ticket, area:"support", badge:(c)=>c.openSupportTickets },
     { label: "Activity logs", href: "/activity", icon: Icons.activity, area:"activity" },
   ]},
-  { label: "System", items: [{ label: "Settings", href: "/settings", icon: Icons.settings, area:"settings" }] },
+  { label: "System", items: [{ label: "Markets", href: "/markets", icon: Icons.globe, area:"markets" }, { label: "Settings", href: "/settings", icon: Icons.settings, area:"settings" }] },
 ];
 
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {

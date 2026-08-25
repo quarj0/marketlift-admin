@@ -13,7 +13,7 @@ const commands:[string,string,string,AdminArea][] = [
   ["Dashboard","/dashboard","Overview","dashboard"],["Users","/users","Marketplace","users"],["Sellers","/sellers","Marketplace","sellers"],
   ["Listings","/listings","Marketplace","listings"],["Categories","/categories","Marketplace","categories"],["Moderation","/moderation","Trust & Safety","moderation"],
   ["Verifications","/verifications","Trust & Safety","verifications"],["Reports","/reports","Trust & Safety","reports"],["Subscriptions","/subscriptions","Revenue","subscriptions"],
-  ["Payments","/payments","Revenue","payments"],["Promotions","/promotions","Revenue","promotions"],["Analytics","/analytics","Operations","analytics"],
+  ["Payments","/payments","Revenue","payments"],["Promotions","/promotions","Revenue","promotions"],["Markets","/markets","System","markets"],["Analytics","/analytics","Operations","analytics"],
   ["Support","/support","Operations","support"],["Activity logs","/activity","Operations","activity"],["Settings","/settings","System","settings"],
 ];
 

@@ -14,7 +14,7 @@ type Ticket={id:string;reference:string;userId:string;userName:string;subject:st
 type Staff={id:string;name:string;email:string;active:boolean;suspended:boolean;adminRole:string|null};
 const QUERY=`query SupportTicket($id:ID!){supportTicket(id:$id){id reference userId userName subject category priority status assignedTo updatedAt createdAt messages{id senderName body internal attachmentUrl createdAt}}}`;
 const STAFF_QUERY=`query SupportAssignees { adminStaff(limit:100){id name email active suspended adminRole} }`;
-const fmt=(v:string)=>new Intl.DateTimeFormat("pt-BR",{dateStyle:"medium",timeStyle:"short"}).format(new Date(v));
+const fmt=(v:string)=>new Intl.DateTimeFormat("en",{dateStyle:"medium",timeStyle:"short"}).format(new Date(v));
 const title=(v:string)=>v.replace(/_/g," ").replace(/\b\w/g,(c)=>c.toUpperCase());
 const statusUi=(v:string):Status=>(v==="review"?"Review":title(v)) as Status;
 
