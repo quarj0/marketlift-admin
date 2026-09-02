@@ -677,13 +677,15 @@ export default function CategoryDetailPage() {
               </p>
               <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">
                 {categoryImagePreview && !removeCategoryImage ? (
-                  {/* Temporary local blob preview; Next Image is not appropriate here. */}
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={categoryImagePreview}
-                    alt=""
-                    className="h-28 w-40 rounded-xl border object-cover"
-                  />
+                  <>
+                    {/* Temporary local blob preview; Next Image is not appropriate here. */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={categoryImagePreview}
+                      alt=""
+                      className="h-28 w-40 rounded-xl border object-cover"
+                    />
+                  </>
                 ) : (
                   <div className="grid h-28 w-40 place-items-center rounded-xl border border-dashed bg-slate-50 text-xs text-slate-400">
                     No image
