@@ -331,7 +331,7 @@ const REPORT_QUERY = `query AdminReports { reports(limit: 100) { id reference ta
 const VERIFICATION_QUERY = `query AdminVerifications { verifications(limit: 100) { id sellerId sellerName identityCountryCode identityType identityMasked cpfMasked legalName birthDate documentType documentFrontUrl documentBackUrl selfieUrl status riskLevel riskFlags submittedAt decisionNote } verificationQueueSummary { pending review verifiedToday rejectedToday } }`;
 const PAYMENT_QUERY = `query AdminPayments { adminPayments(limit: 100) { id reference sellerId sellerName purpose method status amount currency provider providerOrderId planId billingCycle listingId promotionId createdAt } paymentSummary { paidTotal refundedTotal currencyTotals { currency paidTotal refundedTotal } paidCount failedCount pendingCount successRate } }`;
 const SUPPORT_QUERY = `query AdminSupport { supportTickets(limit: 200) { id reference userId userName subject category priority status assignedTo updatedAt createdAt } }`;
-const CATEGORY_QUERY = `query AdminCategories { adminCategories { id name icon active subcategories { id name icon active } } }`;
+const CATEGORY_QUERY = `query AdminCategories { adminCategories { id name icon imageUrl active subcategories { id name icon imageUrl active } } }`;
 const AUDIT_QUERY = `query AdminAudit { auditEvents(limit: 200) { id actorName actorEmail action targetType targetId targetLabel ipAddress createdAt } }`;
 const PROMOTION_QUERY = `query PromotionOptions { promotionOptions { id name description durationDays price } }`;
 const MARKET_QUERY = `query AdminMarketConfiguration { adminMarkets { code countryName locale currency currencySymbol timezone paymentProvider paymentMethods identityProvider identityLabel identityKey locationMode isEnabled isDefault sortOrder pricingReady pricingIssues paymentReady paymentReadinessMessage identityReady identityReadinessMessage launchReady launchIssues } adminSellerPlanMarketPrices { marketCode currency planId planName monthlyPrice yearlyPrice active } adminPromotionMarketPrices { marketCode currency promotionId promotionName price active } }`;
@@ -530,11 +530,13 @@ type CategoryQueryData = {
     id: string;
     name: string;
     icon: string | null;
+    imageUrl: string | null;
     active: boolean;
     subcategories: {
       id: string;
       name: string;
       icon: string;
+      imageUrl: string | null;
       active: boolean;
     }[];
   }[];
@@ -915,6 +917,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         listings: listingCounts.get(c.id) || 0,
         active: Boolean(c.active),
         icon: c.icon || "",
+        imageUrl: c.imageUrl || "",
         subcategories: c.subcategories || [],
       }));
       const verifications: AdminVerificationRecord[] = (

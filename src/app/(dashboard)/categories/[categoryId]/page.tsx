@@ -7,6 +7,7 @@ import { AdminButton } from "@/components/ui/admin-button";
 import { Dialog } from "@/components/ui/dialog";
 import { ActionDialog } from "@/components/ui/action-dialog";
 import { graphqlRequest } from "@/lib/api-client";
+import { uploadCategoryImage } from "@/lib/category-image-upload";
 import { useAdminData } from "@/components/admin/admin-data-provider";
 
 type Option = { value: string; label: string };
@@ -29,13 +30,14 @@ type Category = {
   id: string;
   name: string;
   icon: string;
+  imageUrl: string | null;
   active: boolean;
   schemaVersion: number;
   description: string;
   pricing: { mode: string; label: string; placeholder: string | null };
   condition: { enabled: boolean; required: boolean };
   fields: FieldDef[];
-  subcategories: { id: string; name: string; icon: string; active: boolean }[];
+  subcategories: { id: string; name: string; icon: string; imageUrl: string | null; active: boolean }[];
 };
 type CategoryDraft = {
   name: string;
@@ -64,7 +66,7 @@ type FieldDraft = {
   step: string;
   options: string;
 };
-const QUERY = `query AdminCategoryEditor { adminCategories { id name icon active schemaVersion description pricing{mode label placeholder} condition{enabled required} fields{id label type required filterable allowCustomValue placeholder helpText unit min max step options{value label}} subcategories{id name icon active} } }`;
+const QUERY = `query AdminCategoryEditor { adminCategories { id name icon imageUrl active schemaVersion description pricing{mode label placeholder} condition{enabled required} fields{id label type required filterable allowCustomValue placeholder helpText unit min max step options{value label}} subcategories{id name icon imageUrl active} } }`;
 const emptyField: FieldDraft = {
   key: "",
   label: "",
@@ -114,6 +116,9 @@ export default function CategoryDetailPage() {
   const [subOpen, setSubOpen] = useState(false);
   const [subName, setSubName] = useState("");
   const [busy, setBusy] = useState(false);
+  const [categoryImageFile, setCategoryImageFile] = useState<File | null>(null);
+  const [categoryImagePreview, setCategoryImagePreview] = useState("");
+  const [removeCategoryImage, setRemoveCategoryImage] = useState(false);
   const load = useCallback(async () => {
     try {
       const d = await graphqlRequest<{ adminCategories: Category[] }>(QUERY);
@@ -138,6 +143,9 @@ export default function CategoryDetailPage() {
   }, [load]);
   function editCategory() {
     if (!category) return;
+    setCategoryImageFile(null);
+    setCategoryImagePreview(category.imageUrl || "");
+    setRemoveCategoryImage(false);
     setDraft({
       name: category.name,
       icon: category.icon,
@@ -155,6 +163,9 @@ export default function CategoryDetailPage() {
     if (!category || !draft || draft.name.trim().length < 2) return;
     setBusy(true);
     try {
+      const imageUploadId = categoryImageFile
+        ? await uploadCategoryImage(categoryImageFile)
+        : null;
       await graphqlRequest(
         `mutation($id:String!,$input:CategoryAdminInput!){updateCategory(categoryId:$id,input:$input){id}}`,
         {
@@ -163,6 +174,8 @@ export default function CategoryDetailPage() {
             name: draft.name.trim(),
             slug: category.id,
             icon: draft.icon.trim(),
+            imageUploadId,
+            removeImage: removeCategoryImage,
             description: draft.description.trim(),
             active: draft.active,
             pricingMode: draft.pricingMode,
@@ -365,9 +378,17 @@ export default function CategoryDetailPage() {
       </SafeLink>
       <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <span className="grid size-12 place-items-center rounded-xl bg-slate-50 text-2xl">
-            {category.icon || "📦"}
-          </span>
+          {category.imageUrl ? (
+            <img
+              src={category.imageUrl}
+              alt=""
+              className="size-16 shrink-0 rounded-xl object-cover"
+            />
+          ) : (
+            <span className="grid size-12 place-items-center rounded-xl bg-slate-50 text-2xl">
+              {category.icon || "📦"}
+            </span>
+          )}
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-black">{category.name}</h1>
@@ -510,15 +531,23 @@ export default function CategoryDetailPage() {
                   key={sub.id}
                   className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-xs"
                 >
-                  <span className="font-bold">
-                    {sub.icon || "📦"} {sub.name}
+                  <span className="flex min-w-0 items-center gap-2 font-bold">
+                    {sub.imageUrl ? (
+                      <img src={sub.imageUrl} alt="" className="size-9 rounded-lg object-cover" />
+                    ) : (
+                      <span className="grid size-9 place-items-center rounded-lg bg-white">
+                        {sub.icon || "📦"}
+                      </span>
+                    )}
+                    <span className="truncate">{sub.name}</span>
                   </span>
-                  <span
-                    className={
-                      sub.active ? "text-emerald-700" : "text-slate-400"
-                    }
-                  >
-                    {sub.active ? "Active" : "Hidden"}
+                  <span className="flex items-center gap-2">
+                    <SafeLink href={`/categories/${sub.id}`} className="font-bold text-emerald-700">
+                      Manage
+                    </SafeLink>
+                    <span className={sub.active ? "text-emerald-700" : "text-slate-400"}>
+                      {sub.active ? "Active" : "Hidden"}
+                    </span>
                   </span>
                 </div>
               ))}
@@ -561,11 +590,55 @@ export default function CategoryDetailPage() {
                 /{category.id}
               </div>
             </label>
-            <Field
-              label="Icon"
-              value={draft.icon}
-              onChange={(v) => setDraft((d) => d && { ...d, icon: v })}
-            />
+            <div className="sm:col-span-2 rounded-xl border border-slate-200 p-4">
+              <p className="text-xs font-black text-slate-800">Category image</p>
+              <p className="mt-1 text-xs text-slate-500">
+                Upload a clear photo or product image that represents this category. Landscape or square images work best.
+              </p>
+              <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">
+                {categoryImagePreview && !removeCategoryImage ? (
+                  <img
+                    src={categoryImagePreview}
+                    alt=""
+                    className="h-28 w-40 rounded-xl border object-cover"
+                  />
+                ) : (
+                  <div className="grid h-28 w-40 place-items-center rounded-xl border border-dashed bg-slate-50 text-xs text-slate-400">
+                    No image
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <label className="inline-flex cursor-pointer rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold hover:bg-slate-50">
+                    Choose image
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="sr-only"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0] || null;
+                        setCategoryImageFile(file);
+                        setRemoveCategoryImage(false);
+                        if (file) setCategoryImagePreview(URL.createObjectURL(file));
+                      }}
+                    />
+                  </label>
+                  {(category.imageUrl || categoryImageFile) && (
+                    <button
+                      type="button"
+                      className="block text-xs font-bold text-red-600"
+                      onClick={() => {
+                        setCategoryImageFile(null);
+                        setCategoryImagePreview("");
+                        setRemoveCategoryImage(true);
+                      }}
+                    >
+                      Remove image
+                    </button>
+                  )}
+                  <p className="text-[11px] text-slate-400">JPG, PNG or WebP · up to 5 MB</p>
+                </div>
+              </div>
+            </div>
             <label>
               <span className="mb-2 block text-xs font-bold">Pricing mode</span>
               <select

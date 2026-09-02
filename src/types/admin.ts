@@ -152,7 +152,14 @@ export type CategoryRecord = {
   listings: number;
   active: boolean;
   icon: string;
-  subcategories: { id: string; name: string; icon: string; active: boolean }[];
+  imageUrl: string;
+  subcategories: {
+    id: string;
+    name: string;
+    icon: string;
+    imageUrl?: string | null;
+    active: boolean;
+  }[];
 };
 export type PlanRecord = {
   id: string;
