@@ -595,6 +595,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
   );
 
   const refresh = useCallback(async () => {
+    setLoading(true);
     setError(null);
     try {
       const session = await apiRequest<SessionResponse>(
@@ -611,6 +612,54 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
       setSessionUser(user);
       const allowed = (area: AdminArea) =>
         canAccessAdminArea(user.adminRole, area, user.isSuperuser);
+      const route = pathname || "/dashboard";
+      const needed = (area: string) => {
+        if (area === "notifications") return true;
+        if (route === "/" || route.startsWith("/dashboard")) {
+          return ["dashboard", "listings", "activity", "markets"].includes(
+            area,
+          );
+        }
+        if (route.startsWith("/analytics")) {
+          return [
+            "dashboard",
+            "listings",
+            "sellers",
+            "payments",
+            "verifications",
+            "markets",
+          ].includes(area);
+        }
+        if (route.startsWith("/users")) return area === "users";
+        if (route.startsWith("/sellers")) {
+          return ["sellers", "users", "subscriptions"].includes(area);
+        }
+        if (route.startsWith("/listings")) return area === "listings";
+        if (route.startsWith("/categories")) return area === "categories";
+        if (route.startsWith("/moderation")) {
+          return ["moderation", "listings"].includes(area);
+        }
+        if (route.startsWith("/reports")) return area === "reports";
+        if (route.startsWith("/verifications")) {
+          return ["verifications", "markets"].includes(area);
+        }
+        if (route.startsWith("/subscriptions")) {
+          return ["subscriptions", "sellers", "users", "markets"].includes(
+            area,
+          );
+        }
+        if (route.startsWith("/payments")) {
+          return ["payments", "sellers", "markets"].includes(area);
+        }
+        if (route.startsWith("/promotions")) {
+          return ["promotions", "markets"].includes(area);
+        }
+        if (route.startsWith("/support")) return area === "support";
+        if (route.startsWith("/activity")) return area === "activity";
+        if (route.startsWith("/markets")) return area === "markets";
+        // SettingsClient and detail pages load their own focused GraphQL data.
+        return false;
+      };
       const [
         dashboardRes,
         notificationRes,
@@ -628,48 +677,86 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         promotionRes,
         marketRes,
       ] = await Promise.all([
-        safeQuery<DashboardQueryData>(DASHBOARD_QUERY),
+        needed("dashboard")
+          ? safeQuery<DashboardQueryData>(DASHBOARD_QUERY)
+          : null,
         safeQuery<NotificationQueryData>(NOTIFICATION_QUERY),
-        allowed("users") ? safeQuery<UserQueryData>(USER_QUERY) : null,
-        allowed("sellers") ? safeQuery<SellerQueryData>(SELLER_QUERY) : null,
-        allowed("subscriptions")
+        needed("users") && allowed("users")
+          ? safeQuery<UserQueryData>(USER_QUERY)
+          : null,
+        needed("sellers") && allowed("sellers")
+          ? safeQuery<SellerQueryData>(SELLER_QUERY)
+          : null,
+        needed("subscriptions") && allowed("subscriptions")
           ? safeQuery<BillingQueryData>(BILLING_QUERY)
           : null,
-        allowed("listings") ? safeQuery<ListingQueryData>(LISTING_QUERY) : null,
-        allowed("moderation")
+        needed("listings") && allowed("listings")
+          ? safeQuery<ListingQueryData>(LISTING_QUERY)
+          : null,
+        needed("moderation") && allowed("moderation")
           ? safeQuery<ModerationQueryData>(MODERATION_QUERY)
           : null,
-        allowed("reports") ? safeQuery<ReportQueryData>(REPORT_QUERY) : null,
-        allowed("verifications")
+        needed("reports") && allowed("reports")
+          ? safeQuery<ReportQueryData>(REPORT_QUERY)
+          : null,
+        needed("verifications") && allowed("verifications")
           ? safeQuery<VerificationQueryData>(VERIFICATION_QUERY)
           : null,
-        allowed("payments") ? safeQuery<PaymentQueryData>(PAYMENT_QUERY) : null,
-        allowed("support") ? safeQuery<SupportQueryData>(SUPPORT_QUERY) : null,
-        allowed("categories")
+        needed("payments") && allowed("payments")
+          ? safeQuery<PaymentQueryData>(PAYMENT_QUERY)
+          : null,
+        needed("support") && allowed("support")
+          ? safeQuery<SupportQueryData>(SUPPORT_QUERY)
+          : null,
+        needed("categories") && allowed("categories")
           ? safeQuery<CategoryQueryData>(CATEGORY_QUERY)
           : null,
-        allowed("activity") ? safeQuery<AuditQueryData>(AUDIT_QUERY) : null,
-        allowed("promotions")
+        needed("activity") && allowed("activity")
+          ? safeQuery<AuditQueryData>(AUDIT_QUERY)
+          : null,
+        needed("promotions") && allowed("promotions")
           ? safeQuery<PromotionQueryData>(PROMOTION_QUERY)
           : null,
-        allowed("markets") ? safeQuery<MarketQueryData>(MARKET_QUERY) : null,
+        needed("markets") && allowed("markets")
+          ? safeQuery<MarketQueryData>(MARKET_QUERY)
+          : null,
       ]);
       const failedAreas = [
-        ["dashboard", true, dashboardRes],
+        ["dashboard", needed("dashboard"), dashboardRes],
         ["notifications", true, notificationRes],
-        ["users", allowed("users"), usersRes],
-        ["sellers", allowed("sellers"), sellerRes],
-        ["subscriptions", allowed("subscriptions"), billingRes],
-        ["listings", allowed("listings"), listingRes],
-        ["moderation", allowed("moderation"), moderationRes],
-        ["reports", allowed("reports"), reportRes],
-        ["verifications", allowed("verifications"), verificationRes],
-        ["payments", allowed("payments"), paymentRes],
-        ["support", allowed("support"), supportRes],
-        ["categories", allowed("categories"), categoryRes],
-        ["activity", allowed("activity"), auditRes],
-        ["promotions", allowed("promotions"), promotionRes],
-        ["markets", allowed("markets"), marketRes],
+        ["users", needed("users") && allowed("users"), usersRes],
+        ["sellers", needed("sellers") && allowed("sellers"), sellerRes],
+        [
+          "subscriptions",
+          needed("subscriptions") && allowed("subscriptions"),
+          billingRes,
+        ],
+        ["listings", needed("listings") && allowed("listings"), listingRes],
+        [
+          "moderation",
+          needed("moderation") && allowed("moderation"),
+          moderationRes,
+        ],
+        ["reports", needed("reports") && allowed("reports"), reportRes],
+        [
+          "verifications",
+          needed("verifications") && allowed("verifications"),
+          verificationRes,
+        ],
+        ["payments", needed("payments") && allowed("payments"), paymentRes],
+        ["support", needed("support") && allowed("support"), supportRes],
+        [
+          "categories",
+          needed("categories") && allowed("categories"),
+          categoryRes,
+        ],
+        ["activity", needed("activity") && allowed("activity"), auditRes],
+        [
+          "promotions",
+          needed("promotions") && allowed("promotions"),
+          promotionRes,
+        ],
+        ["markets", needed("markets") && allowed("markets"), marketRes],
       ]
         .filter(([, expected, result]) => Boolean(expected) && result == null)
         .map(([name]) => String(name));
