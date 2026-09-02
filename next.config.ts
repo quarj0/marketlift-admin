@@ -1,6 +1,15 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "assets.marketlift.com.br",
+        pathname: "/**",
+      },
+    ],
+  },
   poweredByHeader: false,
   experimental: {
     serverComponentsHmrCache: false,

@@ -8,7 +8,9 @@ import { Dialog } from "@/components/ui/dialog";
 import { ActionDialog } from "@/components/ui/action-dialog";
 import { graphqlRequest } from "@/lib/api-client";
 import { uploadCategoryImage } from "@/lib/category-image-upload";
+import { downloadCategoryCatalogTemplate } from "@/lib/category-catalog";
 import { useAdminData } from "@/components/admin/admin-data-provider";
+import Image from "next/image";
 
 type Option = { value: string; label: string };
 type FieldDef = {
@@ -18,6 +20,9 @@ type FieldDef = {
   required: boolean;
   filterable: boolean;
   allowCustomValue: boolean;
+  dependsOn: string | null;
+  lazyOptions: boolean;
+  optionCount: number;
   placeholder: string | null;
   helpText: string | null;
   unit: string | null;
@@ -58,6 +63,8 @@ type FieldDraft = {
   required: boolean;
   filterable: boolean;
   allowCustomValue: boolean;
+  dependsOn: string;
+  lazyOptions: boolean;
   placeholder: string;
   helpText: string;
   unit: string;
@@ -66,7 +73,7 @@ type FieldDraft = {
   step: string;
   options: string;
 };
-const QUERY = `query AdminCategoryEditor { adminCategories { id name icon imageUrl active schemaVersion description pricing{mode label placeholder} condition{enabled required} fields{id label type required filterable allowCustomValue placeholder helpText unit min max step options{value label}} subcategories{id name icon imageUrl active} } }`;
+const QUERY = `query AdminCategoryEditor { adminCategories { id name icon imageUrl active schemaVersion description pricing{mode label placeholder} condition{enabled required} fields{id label type required filterable allowCustomValue dependsOn lazyOptions optionCount placeholder helpText unit min max step options{value label}} subcategories{id name icon imageUrl active} } }`;
 const emptyField: FieldDraft = {
   key: "",
   label: "",
@@ -74,6 +81,8 @@ const emptyField: FieldDraft = {
   required: false,
   filterable: false,
   allowCustomValue: false,
+  dependsOn: "",
+  lazyOptions: false,
   placeholder: "",
   helpText: "",
   unit: "",
@@ -112,6 +121,9 @@ export default function CategoryDetailPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [draft, setDraft] = useState<CategoryDraft | null>(null);
   const [fieldOpen, setFieldOpen] = useState(false);
+  const [catalogOpen, setCatalogOpen] = useState(false);
+  const [catalogFile, setCatalogFile] = useState<File | null>(null);
+  const [catalogReplace, setCatalogReplace] = useState(true);
   const [fieldDraft, setFieldDraft] = useState<FieldDraft>(emptyField);
   const [subOpen, setSubOpen] = useState(false);
   const [subName, setSubName] = useState("");
@@ -242,6 +254,8 @@ export default function CategoryDetailPage() {
       required: field.required,
       filterable: field.filterable,
       allowCustomValue: field.allowCustomValue,
+      dependsOn: field.dependsOn || "",
+      lazyOptions: field.lazyOptions,
       placeholder: field.placeholder || "",
       helpText: field.helpText || "",
       unit: field.unit || "",
@@ -257,7 +271,7 @@ export default function CategoryDetailPage() {
       ? category?.fields.find((f) => f.id === fieldDraft.originalId)
       : undefined;
     const options =
-      fieldDraft.type === "select"
+      fieldDraft.type === "select" && !fieldDraft.lazyOptions && !fieldDraft.dependsOn
         ? fieldDraft.options
             .split("\n")
             .map((line) => line.trim())
@@ -269,7 +283,7 @@ export default function CategoryDetailPage() {
                   ?.value || null,
               sortOrder: index,
             }))
-        : [];
+        : null;
     return {
       key: fieldDraft.originalId
         ? fieldDraft.key.trim()
@@ -280,6 +294,10 @@ export default function CategoryDetailPage() {
       filterable: fieldDraft.filterable,
       allowCustomValue:
         fieldDraft.type === "select" && fieldDraft.allowCustomValue,
+      dependsOn:
+        fieldDraft.type === "select" ? fieldDraft.dependsOn || null : null,
+      lazyOptions:
+        fieldDraft.type === "select" && (fieldDraft.lazyOptions || Boolean(fieldDraft.dependsOn)),
       placeholder: fieldDraft.placeholder.trim() || null,
       helpText: fieldDraft.helpText.trim() || null,
       unit: fieldDraft.unit.trim() || null,
@@ -328,6 +346,49 @@ export default function CategoryDetailPage() {
       setBusy(false);
     }
   }
+  async function importCatalog() {
+    if (!category || !catalogFile) return;
+    setBusy(true);
+    try {
+      const csvText = await catalogFile.text();
+      const data = await graphqlRequest<{
+        importCategoryCatalogCsv: {
+          rows: number;
+          fieldsCreated: number;
+          fieldsUpdated: number;
+          optionsCreated: number;
+          optionsUpdated: number;
+          optionsDeactivated: number;
+          dependenciesCreated: number;
+          schemaVersion: number;
+        };
+      }>(
+        `mutation($categoryId:String!,$csvText:String!,$replaceCurrent:Boolean!){importCategoryCatalogCsv(categoryId:$categoryId,csvText:$csvText,replaceCurrent:$replaceCurrent){rows fieldsCreated fieldsUpdated optionsCreated optionsUpdated optionsDeactivated dependenciesCreated schemaVersion}}`,
+        {
+          categoryId: category.id,
+          csvText,
+          replaceCurrent: catalogReplace,
+        },
+      );
+      setCatalogOpen(false);
+      setCatalogFile(null);
+      await load();
+      const result = data.importCategoryCatalogCsv;
+      toast(
+        "Product catalog imported",
+        `${result.rows} rows · ${result.optionsCreated} new choices · ${result.optionsDeactivated} old choices hidden`,
+      );
+    } catch (e) {
+      toast(
+        "Catalog could not be imported",
+        e instanceof Error ? e.message : undefined,
+        "danger",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function deleteField(field: FieldDef) {
     if (!category) return;
     try {
@@ -379,9 +440,11 @@ export default function CategoryDetailPage() {
       <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           {category.imageUrl ? (
-            <img
+            <Image
               src={category.imageUrl}
               alt=""
+              width={64}
+              height={64}
               className="size-16 shrink-0 rounded-xl object-cover"
             />
           ) : (
@@ -419,7 +482,12 @@ export default function CategoryDetailPage() {
                 Fields define listing input and category-specific filters.
               </p>
             </div>
-            <AdminButton onClick={addField}>+ Add field</AdminButton>
+            <div className="flex gap-2">
+              <AdminButton variant="outline" onClick={() => setCatalogOpen(true)}>
+                Import product catalog
+              </AdminButton>
+              <AdminButton onClick={addField}>+ Add question</AdminButton>
+            </div>
           </div>
           <div className="table-scroll">
             <table className="admin-table">
@@ -450,7 +518,13 @@ export default function CategoryDetailPage() {
                     <td>{field.required ? "Yes" : "No"}</td>
                     <td>{field.filterable ? "Yes" : "No"}</td>
                     <td>
-                      {field.type === "select" ? field.options.length : "—"}
+                      {field.type === "select"
+                        ? field.dependsOn
+                          ? `${field.optionCount} · after ${category.fields.find((item) => item.id === field.dependsOn)?.label || field.dependsOn}`
+                          : field.lazyOptions
+                            ? `${field.optionCount} · catalog`
+                            : field.options.length
+                        : "—"}
                     </td>
                     <td>
                       <div className="flex justify-end gap-1">
@@ -533,7 +607,13 @@ export default function CategoryDetailPage() {
                 >
                   <span className="flex min-w-0 items-center gap-2 font-bold">
                     {sub.imageUrl ? (
-                      <img src={sub.imageUrl} alt="" className="size-9 rounded-lg object-cover" />
+                      <Image
+                        src={sub.imageUrl}
+                        alt=""
+                        width={36}
+                        height={36}
+                        className="size-9 rounded-lg object-cover"
+                      />
                     ) : (
                       <span className="grid size-9 place-items-center rounded-lg bg-white">
                         {sub.icon || "📦"}
@@ -597,6 +677,8 @@ export default function CategoryDetailPage() {
               </p>
               <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">
                 {categoryImagePreview && !removeCategoryImage ? (
+                  {/* Temporary local blob preview; Next Image is not appropriate here. */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={categoryImagePreview}
                     alt=""
@@ -741,6 +823,62 @@ export default function CategoryDetailPage() {
         <Field label="Subcategory name" value={subName} onChange={setSubName} />
       </Dialog>
       <Dialog
+        open={catalogOpen}
+        onClose={() => setCatalogOpen(false)}
+        title="Import product catalog"
+        description="Upload a curated CSV to create or refresh dependent choices such as Brand → Model → RAM / Storage."
+        size="lg"
+        footer={
+          <>
+            <AdminButton variant="outline" onClick={() => setCatalogOpen(false)}>
+              Cancel
+            </AdminButton>
+            <AdminButton
+              disabled={busy || !catalogFile}
+              onClick={() => void importCatalog()}
+            >
+              {busy ? "Importing…" : "Import catalog"}
+            </AdminButton>
+          </>
+        }
+      >
+        <div className="space-y-5">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs leading-5 text-slate-600">
+            <p className="font-black text-slate-900">How it works</p>
+            <p className="mt-1">
+              Each row is one choice. Use <b>depends_on</b> and <b>parent_value</b> in the CSV to connect choices. The admin does not need to create the fields first.
+            </p>
+            <button
+              type="button"
+              onClick={downloadCategoryCatalogTemplate}
+              className="mt-3 font-bold text-emerald-700 hover:underline"
+            >
+              Download CSV template
+            </button>
+          </div>
+
+          <label className="block">
+            <span className="mb-2 block text-xs font-bold">Catalog CSV</span>
+            <input
+              type="file"
+              accept=".csv,text/csv"
+              onChange={(event) => setCatalogFile(event.target.files?.[0] || null)}
+              className="block w-full rounded-lg border border-slate-200 bg-white p-3 text-sm"
+            />
+          </label>
+
+          <Check
+            label="Hide old choices that are not included in this new catalog"
+            checked={catalogReplace}
+            onChange={setCatalogReplace}
+          />
+          <p className="text-[11px] leading-5 text-slate-500">
+            Recommended for phones, laptops and other fast-changing products. Old choices are hidden for new listings, not deleted from historical listings.
+          </p>
+        </div>
+      </Dialog>
+
+      <Dialog
         open={fieldOpen}
         onClose={() => setFieldOpen(false)}
         title={
@@ -788,6 +926,8 @@ export default function CategoryDetailPage() {
                   type: e.target.value,
                   allowCustomValue:
                     e.target.value === "select" ? d.allowCustomValue : false,
+                  dependsOn: e.target.value === "select" ? d.dependsOn : "",
+                  lazyOptions: e.target.value === "select" ? d.lazyOptions : false,
                 }))
               }
               className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm"
@@ -843,6 +983,52 @@ export default function CategoryDetailPage() {
             </>
           )}
 
+          {fieldDraft.type === "select" && (
+            <div className="sm:col-span-2 rounded-xl border border-blue-100 bg-blue-50/60 p-4">
+              <p className="text-xs font-black text-slate-800">Smart choices</p>
+              <p className="mt-1 text-[11px] text-slate-500">
+                Use this for flows like Brand → Model → RAM / Storage.
+              </p>
+              <label className="mt-4 block">
+                <span className="mb-2 block text-xs font-bold">
+                  Do these choices depend on another answer?
+                </span>
+                <select
+                  value={fieldDraft.dependsOn}
+                  onChange={(e) =>
+                    setFieldDraft((d) => ({
+                      ...d,
+                      dependsOn: e.target.value,
+                      lazyOptions: e.target.value ? true : d.lazyOptions,
+                    }))
+                  }
+                  className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm"
+                >
+                  <option value="">No — show the same choices to everyone</option>
+                  {category.fields
+                    .filter((item) => item.type === "select" && item.id !== fieldDraft.originalId)
+                    .map((item) => (
+                      <option key={item.id} value={item.id}>
+                        Yes — after {item.label}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              <div className="mt-3">
+                <Check
+                  label="Manage these choices through product catalog imports"
+                  checked={fieldDraft.lazyOptions || Boolean(fieldDraft.dependsOn)}
+                  onChange={(value) =>
+                    setFieldDraft((d) => ({
+                      ...d,
+                      lazyOptions: d.dependsOn ? true : value,
+                    }))
+                  }
+                />
+              </div>
+            </div>
+          )}
+
           <div className="sm:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4">
             <p className="text-xs font-black text-slate-800">
               How this question behaves
@@ -872,7 +1058,7 @@ export default function CategoryDetailPage() {
             </div>
           </div>
 
-          {fieldDraft.type === "select" && (
+          {fieldDraft.type === "select" && !fieldDraft.lazyOptions && !fieldDraft.dependsOn && (
             <label className="sm:col-span-2">
               <span className="mb-2 block text-xs font-bold">
                 Answers sellers can choose from
