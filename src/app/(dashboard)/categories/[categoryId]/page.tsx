@@ -73,7 +73,7 @@ type FieldDraft = {
   step: string;
   options: string;
 };
-const QUERY = `query AdminCategoryEditor { adminCategories { id name icon imageUrl active schemaVersion description pricing{mode label placeholder} condition{enabled required} fields{id label type required filterable allowCustomValue dependsOn lazyOptions optionCount placeholder helpText unit min max step options{value label}} subcategories{id name icon imageUrl active} } }`;
+const QUERY = `query AdminCategoryEditor($id: String!) { adminCategory(id: $id) { id name icon imageUrl active schemaVersion description pricing{mode label placeholder} condition{enabled required} fields{id label type required filterable allowCustomValue dependsOn lazyOptions optionCount placeholder helpText unit min max step options{value label}} subcategories{id name icon imageUrl active} } }`;
 const emptyField: FieldDraft = {
   key: "",
   label: "",
@@ -133,10 +133,11 @@ export default function CategoryDetailPage() {
   const [removeCategoryImage, setRemoveCategoryImage] = useState(false);
   const load = useCallback(async () => {
     try {
-      const d = await graphqlRequest<{ adminCategories: Category[] }>(QUERY);
-      setCategory(
-        d.adminCategories.find((item) => item.id === categoryId) || null,
+      const d = await graphqlRequest<{ adminCategory: Category | null }>(
+        QUERY,
+        { id: categoryId },
       );
+      setCategory(d.adminCategory);
     } catch (e) {
       toast(
         "Category unavailable",
