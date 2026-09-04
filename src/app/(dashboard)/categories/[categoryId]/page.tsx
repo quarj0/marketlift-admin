@@ -25,6 +25,7 @@ type FieldDef = {
   optionCount: number;
   placeholder: string | null;
   helpText: string | null;
+  uiGroup: string | null;
   unit: string | null;
   min: number | null;
   max: number | null;
@@ -40,7 +41,7 @@ type Category = {
   schemaVersion: number;
   description: string;
   pricing: { mode: string; label: string; placeholder: string | null };
-  condition: { enabled: boolean; required: boolean };
+  condition: { enabled: boolean; required: boolean; options: string[] };
   fields: FieldDef[];
   subcategories: { id: string; name: string; icon: string; imageUrl: string | null; active: boolean }[];
 };
@@ -54,6 +55,7 @@ type CategoryDraft = {
   pricingPlaceholder: string;
   conditionEnabled: boolean;
   conditionRequired: boolean;
+  conditionOptions: string;
 };
 type FieldDraft = {
   originalId?: string;
@@ -67,13 +69,14 @@ type FieldDraft = {
   lazyOptions: boolean;
   placeholder: string;
   helpText: string;
+  uiGroup: string;
   unit: string;
   min: string;
   max: string;
   step: string;
   options: string;
 };
-const QUERY = `query AdminCategoryEditor($id: String!) { adminCategory(id: $id) { id name icon imageUrl active schemaVersion description pricing{mode label placeholder} condition{enabled required} fields{id label type required filterable allowCustomValue dependsOn lazyOptions optionCount placeholder helpText unit min max step options{value label}} subcategories{id name icon imageUrl active} } }`;
+const QUERY = `query AdminCategoryEditor($id: String!) { adminCategory(id: $id) { id name icon imageUrl active schemaVersion description pricing{mode label placeholder} condition{enabled required options} fields{id label type required filterable allowCustomValue dependsOn lazyOptions optionCount placeholder helpText uiGroup unit min max step options{value label}} subcategories{id name icon imageUrl active} } }`;
 const emptyField: FieldDraft = {
   key: "",
   label: "",
@@ -85,6 +88,7 @@ const emptyField: FieldDraft = {
   lazyOptions: false,
   placeholder: "",
   helpText: "",
+  uiGroup: "",
   unit: "",
   min: "",
   max: "",
@@ -169,6 +173,7 @@ export default function CategoryDetailPage() {
       pricingPlaceholder: category.pricing.placeholder || "",
       conditionEnabled: category.condition.enabled,
       conditionRequired: category.condition.required,
+      conditionOptions: category.condition.options.join("\n"),
     });
     setEditOpen(true);
   }
@@ -197,6 +202,12 @@ export default function CategoryDetailPage() {
             conditionEnabled: draft.conditionEnabled,
             conditionRequired:
               draft.conditionEnabled && draft.conditionRequired,
+            conditionOptions: draft.conditionEnabled
+              ? draft.conditionOptions
+                  .split("\n")
+                  .map((value) => value.trim())
+                  .filter(Boolean)
+              : [],
           },
         },
       );
@@ -259,6 +270,7 @@ export default function CategoryDetailPage() {
       lazyOptions: field.lazyOptions,
       placeholder: field.placeholder || "",
       helpText: field.helpText || "",
+      uiGroup: field.uiGroup || "",
       unit: field.unit || "",
       min: field.min == null ? "" : String(field.min),
       max: field.max == null ? "" : String(field.max),
@@ -301,6 +313,10 @@ export default function CategoryDetailPage() {
         fieldDraft.type === "select" && (fieldDraft.lazyOptions || Boolean(fieldDraft.dependsOn)),
       placeholder: fieldDraft.placeholder.trim() || null,
       helpText: fieldDraft.helpText.trim() || null,
+      uiGroup:
+        fieldDraft.type === "boolean"
+          ? fieldDraft.uiGroup.trim() || null
+          : null,
       unit: fieldDraft.unit.trim() || null,
       min: fieldDraft.min === "" ? null : Number(fieldDraft.min),
       max: fieldDraft.max === "" ? null : Number(fieldDraft.max),
@@ -510,9 +526,11 @@ export default function CategoryDetailPage() {
                         {field.label}
                       </div>
                       <div className="text-[10px] text-slate-400">
-                        {field.unit
-                          ? `Unit: ${field.unit}`
-                          : "Used when creating a listing"}
+                        {field.uiGroup
+                          ? `Group: ${field.uiGroup}`
+                          : field.unit
+                            ? `Unit: ${field.unit}`
+                            : "Used when creating a listing"}
                       </div>
                     </td>
                     <td>{fieldTypeLabel(field.type)}</td>
@@ -581,9 +599,7 @@ export default function CategoryDetailPage() {
                 label="Condition"
                 value={
                   category.condition.enabled
-                    ? category.condition.required
-                      ? "Required"
-                      : "Optional"
+                    ? `${category.condition.required ? "Required" : "Optional"} · ${category.condition.options.join(", ")}`
                     : "Disabled"
                 }
               />
@@ -801,6 +817,31 @@ export default function CategoryDetailPage() {
               />{" "}
               Require condition
             </label>
+            {draft.conditionEnabled && (
+              <label className="sm:col-span-2">
+                <span className="mb-2 block text-xs font-bold">
+                  Condition choices
+                </span>
+                <textarea
+                  value={draft.conditionOptions}
+                  onChange={(event) =>
+                    setDraft(
+                      (current) =>
+                        current && {
+                          ...current,
+                          conditionOptions: event.target.value,
+                        },
+                    )
+                  }
+                  className="min-h-28 w-full rounded-lg border border-slate-200 p-3 text-sm"
+                  placeholder={"Brand New\nForeign Used\nLocal Used"}
+                />
+                <span className="mt-1 block text-[11px] text-slate-500">
+                  One choice per line. Use category-specific wording; vehicles,
+                  property and general goods should not share the same condition list.
+                </span>
+              </label>
+            )}
           </div>
         )}
       </Dialog>
@@ -962,6 +1003,22 @@ export default function CategoryDetailPage() {
             value={fieldDraft.helpText}
             onChange={(v) => setFieldDraft((d) => ({ ...d, helpText: v }))}
           />
+
+          {fieldDraft.type === "boolean" && (
+            <div className="sm:col-span-2">
+              <Field
+                label="Checkbox group (optional)"
+                value={fieldDraft.uiGroup}
+                onChange={(v) =>
+                  setFieldDraft((d) => ({ ...d, uiGroup: v }))
+                }
+              />
+              <p className="mt-1 text-[11px] text-slate-500">
+                Questions with the same group name appear together, for example
+                “Key Features”, “Second Condition” or “Amenities”.
+              </p>
+            </div>
+          )}
 
           {fieldDraft.type === "number" && (
             <>
