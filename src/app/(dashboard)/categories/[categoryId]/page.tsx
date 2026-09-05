@@ -34,6 +34,7 @@ type FieldDef = {
 };
 type Category = {
   id: string;
+  parentId: string | null;
   name: string;
   icon: string;
   imageUrl: string | null;
@@ -43,7 +44,13 @@ type Category = {
   pricing: { mode: string; label: string; placeholder: string | null };
   condition: { enabled: boolean; required: boolean; options: string[] };
   fields: FieldDef[];
-  subcategories: { id: string; name: string; icon: string; imageUrl: string | null; active: boolean }[];
+  subcategories: {
+    id: string;
+    name: string;
+    icon: string;
+    imageUrl: string | null;
+    active: boolean;
+  }[];
 };
 type CategoryDraft = {
   name: string;
@@ -76,7 +83,7 @@ type FieldDraft = {
   step: string;
   options: string;
 };
-const QUERY = `query AdminCategoryEditor($id: String!) { adminCategory(id: $id) { id name icon imageUrl active schemaVersion description pricing{mode label placeholder} condition{enabled required options} fields{id label type required filterable allowCustomValue dependsOn lazyOptions optionCount placeholder helpText uiGroup unit min max step options{value label}} subcategories{id name icon imageUrl active} } }`;
+const QUERY = `query AdminCategoryEditor($id: String!) { adminCategory(id: $id) { id parentId name icon imageUrl active schemaVersion description pricing{mode label placeholder} condition{enabled required options} fields{id label type required filterable allowCustomValue dependsOn lazyOptions optionCount placeholder helpText uiGroup unit min max step options{value label}} subcategories{id name icon imageUrl active} } }`;
 const emptyField: FieldDraft = {
   key: "",
   label: "",
@@ -191,6 +198,7 @@ export default function CategoryDetailPage() {
           input: {
             name: draft.name.trim(),
             slug: category.id,
+            parentId: category.parentId,
             icon: draft.icon.trim(),
             imageUploadId,
             removeImage: removeCategoryImage,
@@ -284,7 +292,9 @@ export default function CategoryDetailPage() {
       ? category?.fields.find((f) => f.id === fieldDraft.originalId)
       : undefined;
     const options =
-      fieldDraft.type === "select" && !fieldDraft.lazyOptions && !fieldDraft.dependsOn
+      fieldDraft.type === "select" &&
+      !fieldDraft.lazyOptions &&
+      !fieldDraft.dependsOn
         ? fieldDraft.options
             .split("\n")
             .map((line) => line.trim())
@@ -310,7 +320,8 @@ export default function CategoryDetailPage() {
       dependsOn:
         fieldDraft.type === "select" ? fieldDraft.dependsOn || null : null,
       lazyOptions:
-        fieldDraft.type === "select" && (fieldDraft.lazyOptions || Boolean(fieldDraft.dependsOn)),
+        fieldDraft.type === "select" &&
+        (fieldDraft.lazyOptions || Boolean(fieldDraft.dependsOn)),
       placeholder: fieldDraft.placeholder.trim() || null,
       helpText: fieldDraft.helpText.trim() || null,
       uiGroup:
@@ -500,7 +511,10 @@ export default function CategoryDetailPage() {
               </p>
             </div>
             <div className="flex gap-2">
-              <AdminButton variant="outline" onClick={() => setCatalogOpen(true)}>
+              <AdminButton
+                variant="outline"
+                onClick={() => setCatalogOpen(true)}
+              >
                 Import product catalog
               </AdminButton>
               <AdminButton onClick={addField}>+ Add question</AdminButton>
@@ -639,10 +653,17 @@ export default function CategoryDetailPage() {
                     <span className="truncate">{sub.name}</span>
                   </span>
                   <span className="flex items-center gap-2">
-                    <SafeLink href={`/categories/${sub.id}`} className="font-bold text-emerald-700">
+                    <SafeLink
+                      href={`/categories/${sub.id}`}
+                      className="font-bold text-emerald-700"
+                    >
                       Manage
                     </SafeLink>
-                    <span className={sub.active ? "text-emerald-700" : "text-slate-400"}>
+                    <span
+                      className={
+                        sub.active ? "text-emerald-700" : "text-slate-400"
+                      }
+                    >
                       {sub.active ? "Active" : "Hidden"}
                     </span>
                   </span>
@@ -688,9 +709,12 @@ export default function CategoryDetailPage() {
               </div>
             </label>
             <div className="sm:col-span-2 rounded-xl border border-slate-200 p-4">
-              <p className="text-xs font-black text-slate-800">Category image</p>
+              <p className="text-xs font-black text-slate-800">
+                Category image
+              </p>
               <p className="mt-1 text-xs text-slate-500">
-                Upload a clear photo or product image that represents this category. Landscape or square images work best.
+                Upload a clear photo or product image that represents this
+                category. Landscape or square images work best.
               </p>
               <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">
                 {categoryImagePreview && !removeCategoryImage ? (
@@ -719,7 +743,8 @@ export default function CategoryDetailPage() {
                         const file = event.target.files?.[0] || null;
                         setCategoryImageFile(file);
                         setRemoveCategoryImage(false);
-                        if (file) setCategoryImagePreview(URL.createObjectURL(file));
+                        if (file)
+                          setCategoryImagePreview(URL.createObjectURL(file));
                       }}
                     />
                   </label>
@@ -736,7 +761,9 @@ export default function CategoryDetailPage() {
                       Remove image
                     </button>
                   )}
-                  <p className="text-[11px] text-slate-400">JPG, PNG or WebP · up to 5 MB</p>
+                  <p className="text-[11px] text-slate-400">
+                    JPG, PNG or WebP · up to 5 MB
+                  </p>
                 </div>
               </div>
             </div>
@@ -838,7 +865,8 @@ export default function CategoryDetailPage() {
                 />
                 <span className="mt-1 block text-[11px] text-slate-500">
                   One choice per line. Use category-specific wording; vehicles,
-                  property and general goods should not share the same condition list.
+                  property and general goods should not share the same condition
+                  list.
                 </span>
               </label>
             )}
@@ -874,7 +902,10 @@ export default function CategoryDetailPage() {
         size="lg"
         footer={
           <>
-            <AdminButton variant="outline" onClick={() => setCatalogOpen(false)}>
+            <AdminButton
+              variant="outline"
+              onClick={() => setCatalogOpen(false)}
+            >
               Cancel
             </AdminButton>
             <AdminButton
@@ -890,7 +921,9 @@ export default function CategoryDetailPage() {
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs leading-5 text-slate-600">
             <p className="font-black text-slate-900">How it works</p>
             <p className="mt-1">
-              Each row is one choice. Use <b>depends_on</b> and <b>parent_value</b> in the CSV to connect choices. The admin does not need to create the fields first.
+              Each row is one choice. Use <b>depends_on</b> and{" "}
+              <b>parent_value</b> in the CSV to connect choices. The admin does
+              not need to create the fields first.
             </p>
             <button
               type="button"
@@ -906,7 +939,9 @@ export default function CategoryDetailPage() {
             <input
               type="file"
               accept=".csv,text/csv"
-              onChange={(event) => setCatalogFile(event.target.files?.[0] || null)}
+              onChange={(event) =>
+                setCatalogFile(event.target.files?.[0] || null)
+              }
               className="block w-full rounded-lg border border-slate-200 bg-white p-3 text-sm"
             />
           </label>
@@ -917,7 +952,9 @@ export default function CategoryDetailPage() {
             onChange={setCatalogReplace}
           />
           <p className="text-[11px] leading-5 text-slate-500">
-            Recommended for phones, laptops and other fast-changing products. Old choices are hidden for new listings, not deleted from historical listings.
+            Recommended for phones, laptops and other fast-changing products.
+            Old choices are hidden for new listings, not deleted from historical
+            listings.
           </p>
         </div>
       </Dialog>
@@ -971,7 +1008,8 @@ export default function CategoryDetailPage() {
                   allowCustomValue:
                     e.target.value === "select" ? d.allowCustomValue : false,
                   dependsOn: e.target.value === "select" ? d.dependsOn : "",
-                  lazyOptions: e.target.value === "select" ? d.lazyOptions : false,
+                  lazyOptions:
+                    e.target.value === "select" ? d.lazyOptions : false,
                 }))
               }
               className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm"
@@ -1009,9 +1047,7 @@ export default function CategoryDetailPage() {
               <Field
                 label="Checkbox group (optional)"
                 value={fieldDraft.uiGroup}
-                onChange={(v) =>
-                  setFieldDraft((d) => ({ ...d, uiGroup: v }))
-                }
+                onChange={(v) => setFieldDraft((d) => ({ ...d, uiGroup: v }))}
               />
               <p className="mt-1 text-[11px] text-slate-500">
                 Questions with the same group name appear together, for example
@@ -1064,9 +1100,15 @@ export default function CategoryDetailPage() {
                   }
                   className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm"
                 >
-                  <option value="">No — show the same choices to everyone</option>
+                  <option value="">
+                    No — show the same choices to everyone
+                  </option>
                   {category.fields
-                    .filter((item) => item.type === "select" && item.id !== fieldDraft.originalId)
+                    .filter(
+                      (item) =>
+                        item.type === "select" &&
+                        item.id !== fieldDraft.originalId,
+                    )
                     .map((item) => (
                       <option key={item.id} value={item.id}>
                         Yes — after {item.label}
@@ -1077,7 +1119,9 @@ export default function CategoryDetailPage() {
               <div className="mt-3">
                 <Check
                   label="Manage these choices through product catalog imports"
-                  checked={fieldDraft.lazyOptions || Boolean(fieldDraft.dependsOn)}
+                  checked={
+                    fieldDraft.lazyOptions || Boolean(fieldDraft.dependsOn)
+                  }
                   onChange={(value) =>
                     setFieldDraft((d) => ({
                       ...d,
@@ -1118,25 +1162,27 @@ export default function CategoryDetailPage() {
             </div>
           </div>
 
-          {fieldDraft.type === "select" && !fieldDraft.lazyOptions && !fieldDraft.dependsOn && (
-            <label className="sm:col-span-2">
-              <span className="mb-2 block text-xs font-bold">
-                Answers sellers can choose from
-              </span>
-              <textarea
-                value={fieldDraft.options}
-                onChange={(e) =>
-                  setFieldDraft((d) => ({ ...d, options: e.target.value }))
-                }
-                className="min-h-36 w-full rounded-lg border border-slate-200 p-3 text-sm"
-                placeholder={"8 GB\n12 GB\n16 GB"}
-              />
-              <span className="mt-1 block text-[11px] text-slate-500">
-                Enter one choice per line. Marketlift creates the internal
-                values automatically.
-              </span>
-            </label>
-          )}
+          {fieldDraft.type === "select" &&
+            !fieldDraft.lazyOptions &&
+            !fieldDraft.dependsOn && (
+              <label className="sm:col-span-2">
+                <span className="mb-2 block text-xs font-bold">
+                  Answers sellers can choose from
+                </span>
+                <textarea
+                  value={fieldDraft.options}
+                  onChange={(e) =>
+                    setFieldDraft((d) => ({ ...d, options: e.target.value }))
+                  }
+                  className="min-h-36 w-full rounded-lg border border-slate-200 p-3 text-sm"
+                  placeholder={"8 GB\n12 GB\n16 GB"}
+                />
+                <span className="mt-1 block text-[11px] text-slate-500">
+                  Enter one choice per line. Marketlift creates the internal
+                  values automatically.
+                </span>
+              </label>
+            )}
         </div>
       </Dialog>
     </div>
