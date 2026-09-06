@@ -7,9 +7,11 @@ import {
   useEffect,
   useMemo,
   useState,
+  useRef,
   type ReactNode,
 } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { TableQueryContext, initialTableQuery, type TableQuery } from "@/components/ui/table-query-context";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   API_BASE_URL,
   MarketliftApiError,
@@ -250,7 +252,7 @@ const localeForCurrency = (currency: string) =>
       XOF: "fr-CI",
     }) as Record<string, string>
   )[currency] || "en";
-const money = (value: number, currency = "GHS", locale?: string) =>
+const money = (value: number, currency = "BRL", locale?: string) =>
   new Intl.NumberFormat(locale || localeForCurrency(currency), {
     style: "currency",
     currency,
@@ -323,9 +325,9 @@ async function safeQuery<T>(
 const DASHBOARD_QUERY = `query AdminDashboard { adminDashboard { counts { totalUsers totalSellers activeSellers verifiedSellers totalListings publishedListings listingsUnderReview rejectedListings reportedListings openReports pendingVerifications failedPayments recordedPayments openSupportTickets paidSubscriptions } revenue { today thisMonth total subscriptionTotal promotionTotal } } }`;
 const NOTIFICATION_QUERY = `query AdminNotifications { notifications(limit: 50) { id type title body createdAt read href data } unreadNotificationCount }`;
 const USER_QUERY = `query AdminUsers { adminUsers(limit: 200) { id name email phone active staff suspended joinedAt location { countryCode state stateCode city district } sellerId adminRole } }`;
-const SELLER_QUERY = `query AdminSellers { adminSellers(limit: 100) { id userId name email sellerType countryCode verified suspended activatedAt suspendedAt suspensionReason listingCount } }`;
+const SELLER_QUERY = `query AdminSellers { adminSellers(limit: 100) { id userId name email sellerType countryCode verified suspended activatedAt suspendedAt suspensionReason listingCount ownerName planName location { countryCode state stateCode city district } } }`;
 const BILLING_QUERY = `query AdminSellerBilling { adminSubscriptions(limit: 100) { id sellerId sellerName billingCycle status currentPeriodEnd promotionCreditsRemaining plan { id name monthlyPrice yearlyPrice listingLimit promotionCredits features visibilityWeight recommended active sortOrder } } adminSellerPlans { id name monthlyPrice yearlyPrice listingLimit promotionCredits features visibilityWeight recommended active sortOrder } }`;
-const LISTING_QUERY = `query AdminListings { adminListings(limit: 200) { id slug title description price category categoryName condition location { countryCode state stateCode city district } images seller { id name avatarUrl verified sellerType countryCode isSuspended rating reviews activeListings memberSince location { countryCode state stateCode city district } } createdAt status sellerDeletedAt views favorites inquiries featured urgent } }`;
+const LISTING_QUERY = `query AdminListings { adminListings(limit: 200) { id slug title description price category categoryName condition location { countryCode state stateCode city district } images seller { id name avatarUrl verified sellerType countryCode isSuspended rating reviews activeListings memberSince location { countryCode state stateCode city district } } createdAt status sellerDeletedAt views favorites inquiries featured urgent reportCount } }`;
 const MODERATION_QUERY = `query AdminModeration { moderationQueue(includeFinal: true, limit: 100) { id status source reviewReason decisionReason openedAt decidedAt decidedBy listing { id } } }`;
 const REPORT_QUERY = `query AdminReports { reports(limit: 100) { id reference targetType targetId targetLabel reason statement priority status reporterName assignedTo internalNote decisionReason createdAt decidedAt } }`;
 const VERIFICATION_QUERY = `query AdminVerifications { verifications(limit: 100) { id sellerId sellerName identityCountryCode identityType identityMasked cpfMasked legalName birthDate documentType documentFrontUrl documentBackUrl selfieUrl status riskLevel riskFlags submittedAt decisionNote } verificationQueueSummary { pending review verifiedToday rejectedToday } }`;
@@ -372,6 +374,9 @@ type UserQueryRecord = {
 };
 type UserQueryData = { adminUsers: UserQueryRecord[] };
 type SellerQueryRecord = {
+  ownerName?: string;
+  planName?: string | null;
+  location?: { countryCode?: string; state?: string; stateCode?: string; city?: string; district?: string };
   id: string;
   userId: string;
   name: string;
@@ -414,6 +419,7 @@ type BillingQueryData = {
   adminSellerPlans: SellerPlanQueryRecord[];
 };
 type ListingQueryRecord = {
+  reportCount?: number | null;
   id: string;
   slug: string;
   title: string;
@@ -572,6 +578,30 @@ type MarketQueryData = {
 export function AdminDataProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const tableParams = useSearchParams();
+  const [tableTotal, setTableTotal] = useState(0);
+  const pageParam = Number(tableParams.get("page") || 1);
+  const sizeParam = Number(tableParams.get("pageSize") || initialTableQuery.pageSize);
+  const table: TableQuery = {
+    query: (tableParams.get("q") || "").slice(0, 160),
+    status: tableParams.get("status") || "all",
+    page: Number.isSafeInteger(pageParam) && pageParam > 0 ? pageParam : 1,
+    pageSize: [5, 10, 25].includes(sizeParam) ? sizeParam : initialTableQuery.pageSize,
+  };
+  const { query: tableSearch, status: tableStatus, page: tablePage, pageSize: tableSize } = table;
+  const refreshVersion = useRef(0);
+  const paginatedAreas = ["users", "sellers", "listings", "moderation", "reports", "support", "activity"];
+  const tableArea = paginatedAreas.includes(pathname.split("/")[1]) ? pathname.split("/")[1] : null;
+  const tableIsList = Boolean(tableArea && pathname.split("/").filter(Boolean).length === 1);
+  const updateTable = (patch: Partial<TableQuery>) => {
+    const next = { ...table, ...patch };
+    const params = new URLSearchParams();
+    if (next.query) params.set("q", next.query.slice(0, 160));
+    if (next.status !== "all") params.set("status", next.status);
+    if (next.page > 1) params.set("page", String(next.page));
+    if (next.pageSize !== initialTableQuery.pageSize) params.set("pageSize", String(next.pageSize));
+    window.history.replaceState(null, "", `${pathname}${params.size ? `?${params}` : ""}`);
+  };
   const [data, setData] = useState<AdminData>(emptyData);
   const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -597,14 +627,17 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
   );
 
   const refresh = useCallback(async () => {
+    const version = ++refreshVersion.current;
     setLoading(true);
     setError(null);
     try {
       const session = await apiRequest<SessionResponse>(
         "/api/v1/auth/session/",
       );
+      if (version !== refreshVersion.current) return;
       if (!session.authenticated || !session.user?.isStaff) {
         setSessionUser(null);
+        setData(emptyData);
         router.replace(
           `/login?next=${encodeURIComponent(pathname || "/dashboard")}`,
         );
@@ -616,7 +649,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         canAccessAdminArea(user.adminRole, area, user.isSuperuser);
       const route = pathname || "/dashboard";
       const needed = (area: string) => {
-        if (area === "notifications") return true;
+        if (area === "notifications" || area === "dashboard") return true;
         if (route === "/" || route.startsWith("/dashboard")) {
           return ["dashboard", "listings", "activity", "markets"].includes(
             area,
@@ -636,12 +669,12 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         if (route.startsWith("/sellers")) {
           return ["sellers", "users", "subscriptions"].includes(area);
         }
-        if (route.startsWith("/listings")) return area === "listings";
+        if (route.startsWith("/listings")) return ["listings", "markets", ...(tableIsList ? [] : ["reports", "moderation"])].includes(area);
         if (route.startsWith("/categories")) return area === "categories";
         if (route.startsWith("/moderation")) {
-          return ["moderation", "listings"].includes(area);
+          return ["moderation", "listings", "markets"].includes(area);
         }
-        if (route.startsWith("/reports")) return area === "reports";
+        if (route.startsWith("/reports")) return ["reports", "listings", "markets"].includes(area);
         if (route.startsWith("/verifications")) {
           return ["verifications", "markets"].includes(area);
         }
@@ -661,6 +694,24 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         if (route.startsWith("/markets")) return area === "markets";
         // SettingsClient and detail pages load their own focused GraphQL data.
         return false;
+      };
+      const area = tableArea;
+      const pageQueries: Record<string, string[]> = {
+        users: [USER_QUERY], sellers: [SELLER_QUERY], listings: tableIsList ? [LISTING_QUERY] : [LISTING_QUERY, REPORT_QUERY, MODERATION_QUERY],
+        moderation: [LISTING_QUERY, MODERATION_QUERY], reports: [REPORT_QUERY, LISTING_QUERY],
+        support: [SUPPORT_QUERY], activity: [AUDIT_QUERY],
+      };
+      const selection = area ? pageQueries[area].map((query) => query.slice(query.indexOf("{") + 1, query.lastIndexOf("}")).replace(/(adminUsers|adminSellers|adminListings|moderationQueue|reports|supportTickets|auditEvents)\([^)]*\)/g, "$1")).join(" ") : "";
+      const pagePromise = area ? graphqlRequest<{ adminRecordPage: Record<string, unknown> & { totalCount: number } }>(
+        `query AdminPage($area: String!, $q: String!, $status: String!, $limit: Int!, $offset: Int!, $recordId: String) { adminRecordPage(area: $area, q: $q, status: $status, limit: $limit, offset: $offset, recordId: $recordId) { totalCount ${selection} } }`,
+        { area, q: tableIsList ? tableSearch : "", status: tableIsList ? tableStatus : "", limit: tableSize, offset: tableIsList ? (tablePage - 1) * tableSize : 0, recordId: tableIsList ? null : pathname.split("/")[2] ?? null },
+      ).then(({ adminRecordPage }) => {
+        if (version === refreshVersion.current) setTableTotal(adminRecordPage.totalCount);
+        return adminRecordPage;
+      }) : null;
+      const loadPage = async <T,>(requestedArea: string, query: string): Promise<T | null> => {
+        if (pagePromise && (requestedArea === area || (requestedArea === "listings" && ["moderation", "reports"].includes(area || "")) || (area === "listings" && !tableIsList && ["reports", "moderation"].includes(requestedArea)))) return await pagePromise as T;
+        return safeQuery<T>(query);
       };
       const [
         dashboardRes,
@@ -684,22 +735,22 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
           : null,
         safeQuery<NotificationQueryData>(NOTIFICATION_QUERY),
         needed("users") && allowed("users")
-          ? safeQuery<UserQueryData>(USER_QUERY)
+          ? loadPage<UserQueryData>("users", USER_QUERY)
           : null,
         needed("sellers") && allowed("sellers")
-          ? safeQuery<SellerQueryData>(SELLER_QUERY)
+          ? loadPage<SellerQueryData>("sellers", SELLER_QUERY)
           : null,
         needed("subscriptions") && allowed("subscriptions")
           ? safeQuery<BillingQueryData>(BILLING_QUERY)
           : null,
         needed("listings") && allowed("listings")
-          ? safeQuery<ListingQueryData>(LISTING_QUERY)
+          ? loadPage<ListingQueryData>("listings", LISTING_QUERY)
           : null,
         needed("moderation") && allowed("moderation")
-          ? safeQuery<ModerationQueryData>(MODERATION_QUERY)
+          ? loadPage<ModerationQueryData>("moderation", MODERATION_QUERY)
           : null,
         needed("reports") && allowed("reports")
-          ? safeQuery<ReportQueryData>(REPORT_QUERY)
+          ? loadPage<ReportQueryData>("reports", REPORT_QUERY)
           : null,
         needed("verifications") && allowed("verifications")
           ? safeQuery<VerificationQueryData>(VERIFICATION_QUERY)
@@ -708,13 +759,13 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
           ? safeQuery<PaymentQueryData>(PAYMENT_QUERY)
           : null,
         needed("support") && allowed("support")
-          ? safeQuery<SupportQueryData>(SUPPORT_QUERY)
+          ? loadPage<SupportQueryData>("support", SUPPORT_QUERY)
           : null,
         needed("categories") && allowed("categories")
           ? safeQuery<CategoryQueryData>(CATEGORY_QUERY)
           : null,
         needed("activity") && allowed("activity")
-          ? safeQuery<AuditQueryData>(AUDIT_QUERY)
+          ? loadPage<AuditQueryData>("activity", AUDIT_QUERY)
           : null,
         needed("promotions") && allowed("promotions")
           ? safeQuery<PromotionQueryData>(PROMOTION_QUERY)
@@ -766,6 +817,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         setError(
           `Could not load: ${failedAreas.join(", ")}. Retry or check Settings → Production readiness.`,
         );
+      if (version !== refreshVersion.current) return;
       const rawUsers = usersRes?.adminUsers || [];
       const rawSubs = billingRes?.adminSubscriptions || [];
       const rawListings = listingRes?.adminListings || [];
@@ -820,8 +872,8 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
             publicSellerId: s.id,
             userId: s.userId,
             name: s.name,
-            owner: u?.name || s.email,
-            plan: sub?.plan?.name || "Free",
+            owner: s.ownerName || u?.name || s.email,
+            plan: s.planName || sub?.plan?.name || "—",
             status: s.suspended
               ? "Suspended"
               : s.verified
@@ -830,7 +882,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
             listings: s.listingCount,
             rating: "—",
             revenue: "—",
-            location: locationText(u?.location || undefined),
+            location: locationText(s.location || u?.location || undefined),
             joined: fmtDay(s.activatedAt),
             avatar: "",
             countryCode:
@@ -883,7 +935,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
               ? "Contact seller"
               : money(
                   Number(l.price),
-                  listingMarket?.currency || "GHS",
+                  listingMarket?.currency || ({ BR: "BRL", GH: "GHS", NG: "NGN", KE: "KES", ZA: "ZAR", CI: "XOF" }[l.location?.countryCode || "BR"] ?? "BRL"),
                   listingMarket?.locale,
                 ),
           priceValue: l.price == null ? null : Number(l.price),
@@ -896,7 +948,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
           rawStatus: l.status,
           sellerDeletedAt: l.sellerDeletedAt || "",
           created: fmtDate(l.createdAt),
-          reports: reportCountByListing.get(l.id) || 0,
+          reports: l.reportCount ?? reportCountByListing.get(l.id) ?? 0,
           views: l.views || 0,
           favorites: l.favorites || 0,
           inquiries: l.inquiries || 0,
@@ -1095,6 +1147,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         promotionMarketPrices: marketRes?.adminPromotionMarketPrices || [],
       });
     } catch (e) {
+      if (version !== refreshVersion.current) return;
       if (e instanceof MarketliftApiError && [401, 403].includes(e.status))
         router.replace("/login");
       else
@@ -1104,15 +1157,15 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
             : "Could not load administration data.",
         );
     } finally {
-      setLoading(false);
+      if (version === refreshVersion.current) setLoading(false);
     }
-  }, [pathname, router]);
+  }, [pathname, router, tableArea, tableIsList, tableSearch, tableStatus, tablePage, tableSize]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
       void refresh();
-    }, 0);
-    return () => window.clearTimeout(timeoutId);
+    }, 200);
+    return () => { window.clearTimeout(timeoutId); refreshVersion.current += 1; };
   }, [refresh]);
 
   const canAccess = useCallback(
@@ -1608,7 +1661,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
   );
   return (
     <AdminDataContext.Provider value={value}>
-      {children}
+      <TableQueryContext.Provider value={tableIsList ? { ...table, total: tableTotal, loading, update: updateTable } : null}>{children}</TableQueryContext.Provider>
       <div
         className="pointer-events-none fixed bottom-4 right-4 z-100 flex w-[min(380px,calc(100vw-2rem))] flex-col gap-2"
         aria-live="polite"

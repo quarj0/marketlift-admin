@@ -10,11 +10,7 @@ import { useAdminData } from "@/components/admin/admin-data-provider";
 
 export default function ModerationPage() {
   const { getStatus, getDecision, commitDecision, listings } = useAdminData();
-  const flagged = listings.filter(
-    (listing) =>
-      listing.reports > 0 ||
-      ["Review", "Rejected", "Removed"].includes(listing.status),
-  );
+  const flagged = listings;
 
   return (
     <div className="space-y-6">

@@ -88,7 +88,7 @@ export function Topbar({ onMenu }: { onMenu: () => void }) {
             type="button"
             onClick={() => setSearchOpen(true)}
             aria-label="Search admin console"
-            className="group relative hidden h-10 w-90 items-center rounded-lg border border-slate-200 bg-slate-50/60 pl-9 pr-12 text-left text-sm text-slate-400 transition hover:border-slate-300 hover:bg-white md:flex"
+            className="group relative hidden h-10 w-90 items-center rounded-lg border border-slate-200 bg-slate-50/60 pl-9 pr-12 text-left text-sm text-slate-600 transition hover:border-slate-300 hover:bg-white md:flex"
           >
             <Icons.search
               className="absolute left-3 top-1/2 -translate-y-1/2"
@@ -103,7 +103,7 @@ export function Topbar({ onMenu }: { onMenu: () => void }) {
             type="button"
             onClick={() => setSearchOpen(true)}
             aria-label="Search admin console"
-            className="grid size-10 place-items-center rounded-lg text-slate-500 hover:bg-slate-100 md:hidden"
+            className="grid size-10 place-items-center rounded-lg text-slate-600 hover:bg-slate-100 md:hidden"
           >
             <Icons.search size={19} />
           </button>
@@ -143,13 +143,13 @@ export function Topbar({ onMenu }: { onMenu: () => void }) {
               <span className="block text-xs font-bold text-slate-900">
                 {sessionUser?.name || "Administrator"}
               </span>
-              <span className="block text-[10px] text-slate-500">
+              <span className="block text-[10px] text-slate-600">
                 {(sessionUser?.adminRole || "admin").replace(/_/g, " ")}
               </span>
             </span>
             <Icons.arrowDown
               size={13}
-              className="hidden text-slate-400 sm:block"
+              className="hidden text-slate-600 sm:block"
             />
           </button>
           {notificationsOpen && (
@@ -159,7 +159,7 @@ export function Topbar({ onMenu }: { onMenu: () => void }) {
                   <p className="text-sm font-black">
                     Operational notifications
                   </p>
-                  <p className="text-[10px] text-slate-400">
+                  <p className="text-[10px] text-slate-600">
                     {unreadNotificationCount
                       ? `${unreadNotificationCount} unread`
                       : "You're all caught up"}
@@ -199,10 +199,10 @@ export function Topbar({ onMenu }: { onMenu: () => void }) {
                           <span className="block text-xs font-black text-slate-800">
                             {item.title}
                           </span>
-                          <span className="mt-0.5 block text-[10px] leading-4 text-slate-500">
+                          <span className="mt-0.5 block text-[10px] leading-4 text-slate-600">
                             {item.body}
                           </span>
-                          <span className="mt-1 block text-[9px] font-semibold text-slate-400">
+                          <span className="mt-1 block text-[9px] font-semibold text-slate-600">
                             {item.createdAt}
                           </span>
                         </span>
@@ -210,7 +210,7 @@ export function Topbar({ onMenu }: { onMenu: () => void }) {
                     );
                   })
                 ) : (
-                  <div className="p-6 text-center text-xs text-slate-500">
+                  <div className="p-6 text-center text-xs text-slate-600">
                     No operational notifications.
                   </div>
                 )}
@@ -223,7 +223,7 @@ export function Topbar({ onMenu }: { onMenu: () => void }) {
                 <p className="text-xs font-black">
                   {sessionUser?.name || "Administrator"}
                 </p>
-                <p className="mt-0.5 text-[10px] text-slate-400">
+                <p className="mt-0.5 text-[10px] text-slate-600">
                   {sessionUser?.email || ""}
                 </p>
               </div>
@@ -268,7 +268,7 @@ export function Topbar({ onMenu }: { onMenu: () => void }) {
       >
         <div className="relative">
           <Icons.search
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600"
             size={18}
           />
           <input
@@ -294,7 +294,7 @@ export function Topbar({ onMenu }: { onMenu: () => void }) {
               >
                 <div>
                   <p className="text-sm font-bold text-slate-800">{label}</p>
-                  <p className="mt-0.5 text-[10px] uppercase tracking-wide text-slate-400">
+                  <p className="mt-0.5 text-[10px] uppercase tracking-wide text-slate-600">
                     {group}
                   </p>
                 </div>
@@ -302,7 +302,7 @@ export function Topbar({ onMenu }: { onMenu: () => void }) {
               </SafeLink>
             ))
           ) : (
-            <div className="p-8 text-center text-sm text-slate-500">
+            <div className="p-8 text-center text-sm text-slate-600">
               No matching admin destination.
             </div>
           )}

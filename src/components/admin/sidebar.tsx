@@ -206,7 +206,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           if (!items.length) return null;
           return (
             <div key={section.label} className="mb-5">
-              <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-[.13em] text-slate-500">
+              <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-[.13em] text-slate-400">
                 {section.label}
               </div>
               <div className="space-y-0.5">
@@ -229,7 +229,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                         className={
                           active
                             ? "text-emerald-400"
-                            : "text-slate-500 group-hover:text-slate-300"
+                            : "text-slate-400 group-hover:text-slate-300"
                         }
                       />
                       <span className="flex-1">{item.label}</span>
@@ -252,7 +252,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       <div className="border-t border-white/8 p-3">
         <div className="mb-2 rounded-xl bg-white/[.035] px-3 py-2.5">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold uppercase tracking-wide text-slate-600">
+            <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
               Environment
             </span>
             <span className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-400">
@@ -267,7 +267,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         <button
           type="button"
           onClick={() => void logout()}
-          className="flex h-10 w-full items-center gap-3 rounded-lg px-3 text-[13px] font-semibold text-slate-500 transition hover:bg-white/5 hover:text-slate-300"
+          className="flex h-10 w-full items-center gap-3 rounded-lg px-3 text-[13px] font-semibold text-slate-400 transition hover:bg-white/5 hover:text-slate-300"
         >
           <Icons.logout size={18} /> Sign out
         </button>

@@ -1,3 +1,11 @@
+function requestFetch(input: RequestInfo | URL, init: RequestInit = {}) {
+  const deadline = AbortSignal.timeout(15_000);
+  const signal = init.signal
+    ? AbortSignal.any([init.signal, deadline])
+    : deadline;
+  return fetch(input, { ...init, signal });
+}
+
 function resolveApiBaseUrl() {
   const defaultApiBase =
     process.env.NODE_ENV === "production"
@@ -53,7 +61,7 @@ export async function ensureCsrfToken() {
   if (typeof window === "undefined") return "";
   const existing = cookie("csrftoken");
   if (existing) return existing;
-  const response = await fetch(`${API_BASE_URL}/api/v1/auth/csrf/`, {
+  const response = await requestFetch(`${API_BASE_URL}/api/v1/auth/csrf/`, {
     credentials: "include",
     cache: "no-store",
   });
@@ -84,7 +92,7 @@ export async function apiRequest<T>(
     const token = await ensureCsrfToken();
     if (token) headers.set("X-CSRFToken", token);
   }
-  const response = await fetch(
+  const response = await requestFetch(
     `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`,
     {
       ...init,
@@ -120,7 +128,7 @@ export async function graphqlRequest<T>(
   variables: Record<string, unknown> = {},
 ): Promise<T> {
   const token = await ensureCsrfToken();
-  const response = await fetch(`${API_BASE_URL}/graphql/`, {
+  const response = await requestFetch(`${API_BASE_URL}/graphql/`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
