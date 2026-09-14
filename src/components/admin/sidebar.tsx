@@ -95,6 +95,12 @@ const sections: { label: string; items: Item[] }[] = [
         badge: (c) => c.failedPayments,
       },
       {
+        label: "Commerce",
+        href: "/commerce",
+        icon: Icons.store,
+        area: "commerce",
+      },
+      {
         label: "Promotions",
         href: "/promotions",
         icon: Icons.megaphone,
