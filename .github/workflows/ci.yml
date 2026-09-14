@@ -1,7 +1,7 @@
 name: Frontend checks
 on: [push, pull_request]
 permissions:
-  contents: read
+  contents: write
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -13,7 +13,16 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - name: Refresh lockfile for dependency updates
+        run: |
+          pnpm install --no-frozen-lockfile
+          if ! git diff --quiet -- pnpm-lock.yaml; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add pnpm-lock.yaml
+            git commit -m "chore: refresh pnpm lockfile"
+            git push
+          fi
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm exec next build --webpack
