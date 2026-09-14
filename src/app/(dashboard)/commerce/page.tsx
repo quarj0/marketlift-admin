@@ -136,7 +136,10 @@ export default function CommercePage() {
   }
 
   useEffect(() => {
-    void loadCommerce();
+    const timer = window.setTimeout(() => {
+      void loadCommerce();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [loadCommerce]);
 
   const categoryKey = categories.map((category) => category.slug).join("|");
