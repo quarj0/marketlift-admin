@@ -1,7 +1,7 @@
 export type MarketliftApp = "marketplace" | "admin";
 
 const productionOrigins: Record<MarketliftApp, string> = {
-  marketplace: "https://marketlift.com",
+  marketplace: "https://marketlift.com.br",
   admin: "https://dash.marketlift.com.br",
 };
 
@@ -19,7 +19,15 @@ function configuredOrigin(app: MarketliftApp) {
     app === "marketplace"
       ? process.env.NEXT_PUBLIC_MARKETPLACE_URL
       : process.env.NEXT_PUBLIC_ADMIN_URL;
-  return value?.trim() ? stripTrailingSlash(value.trim()) : null;
+  if (!value?.trim()) return null;
+
+  try {
+    const parsed = new URL(value.trim());
+    if (!['http:', 'https:'].includes(parsed.protocol)) return null;
+    return stripTrailingSlash(parsed.origin + parsed.pathname.replace(/\/+$/, ''));
+  } catch {
+    return null;
+  }
 }
 
 function isLocalHostname(hostname: string) {
@@ -35,8 +43,6 @@ function peerLocalOrigin(app: MarketliftApp, location: Location) {
   const currentPort = location.port;
   let targetPort = localPorts[app];
 
-  // When the two Next.js apps are started without explicit ports, the first
-  // consumes 3000 and the second consumes 3001. Always route to the peer port.
   if (currentPort === "3000") targetPort = "3001";
   else if (currentPort === "3001") targetPort = "3000";
 
@@ -53,17 +59,12 @@ export function appBaseUrlForBrowser(app: MarketliftApp) {
   const configured = configuredOrigin(app);
 
   if (process.env.NODE_ENV === "development") {
-    // Local development should follow the actual browser host and whichever
-    // of ports 3000/3001 is occupied by the other frontend. This avoids a
-    // "View public" link accidentally pointing back to the admin itself.
     if (configured) {
       try {
         const configuredUrl = new URL(configured);
         const looksLocal =
           isLocalHostname(configuredUrl.hostname) ||
           configuredUrl.hostname === window.location.hostname;
-
-        // A non-local explicit override (for example a staging domain) still wins.
         if (!looksLocal)
           return stripTrailingSlash(
             configuredUrl.origin + configuredUrl.pathname,
