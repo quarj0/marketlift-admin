@@ -50,6 +50,9 @@ export function ActionDialog({
       await onConfirm(trimmedReason);
       setOpen(false);
       setReason("");
+    } catch {
+      // The action owns user-facing error reporting. Keep the dialog open so
+      // the administrator can retry without re-entering the confirmation data.
     } finally {
       setPending(false);
     }
