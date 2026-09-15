@@ -27,35 +27,52 @@ export function ActionDialog({
   reasonPlaceholder?: string;
   reasonHelp?: string;
   minReasonLength?: number;
-  onConfirm: (reason: string) => void;
+  onConfirm: (reason: string) => void | Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
+  const [pending, setPending] = useState(false);
   const reasonId = useId();
   const helpId = useId();
   const trimmedReason = reason.trim();
   const valid = !requireReason || trimmedReason.length >= minReasonLength;
 
   const close = () => {
+    if (pending) return;
     setOpen(false);
     setReason("");
   };
 
+  async function confirm() {
+    if (!valid || pending) return;
+    setPending(true);
+    try {
+      await onConfirm(trimmedReason);
+      setOpen(false);
+      setReason("");
+    } catch {
+      // The action owns user-facing error reporting. Keep the dialog open so
+      // the administrator can retry without re-entering the confirmation data.
+    } finally {
+      setPending(false);
+    }
+  }
+
   return <>
-    <span className="contents" onClick={() => setOpen(true)}>{trigger}</span>
+    <span className="contents" onClick={() => !pending && setOpen(true)}>{trigger}</span>
     <Dialog
       open={open}
       onClose={close}
       title={title}
       description={description}
       footer={<>
-        <AdminButton variant="outline" onClick={close}>Cancel</AdminButton>
+        <AdminButton variant="outline" disabled={pending} onClick={close}>Cancel</AdminButton>
         <AdminButton
           variant={tone === "danger" ? "danger" : "primary"}
-          disabled={!valid}
-          onClick={() => { onConfirm(trimmedReason); close(); }}
+          disabled={!valid || pending}
+          onClick={() => void confirm()}
         >
-          {confirmLabel}
+          {pending ? "Working…" : confirmLabel}
         </AdminButton>
       </>}
     >
@@ -67,11 +84,12 @@ export function ActionDialog({
         <textarea
           id={reasonId}
           value={reason}
+          disabled={pending}
           onChange={(event) => setReason(event.target.value)}
           data-dialog-autofocus
           aria-describedby={helpId}
           aria-invalid={reason.length > 0 && !valid}
-          className="min-h-28 w-full resize-y rounded-xl border border-slate-300 bg-white p-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20"
+          className="min-h-28 w-full resize-y rounded-xl border border-slate-300 bg-white p-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 disabled:cursor-not-allowed disabled:opacity-60"
           placeholder={reasonPlaceholder}
         />
         <div id={helpId} className="mt-1.5 flex items-start justify-between gap-4 text-[11px] leading-4 text-slate-500">
