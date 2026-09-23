@@ -491,11 +491,10 @@ export function SettingsClient() {
                 />
                 <div className="flex-1">
                   <h2 className="text-sm font-black text-red-950">
-                    Danger zone
+                    Service controls
                   </h2>
                   <p className="mt-1 text-xs leading-5 text-red-900/70">
-                    These actions affect platform availability or active
-                    sessions. Session invalidation requires a written reason.
+                    Control marketplace availability and active sessions. Changes here take effect immediately; session invalidation requires a written reason.
                   </p>
                   <div className="mt-4 flex flex-wrap gap-2">
                     <ActionDialog
@@ -517,8 +516,8 @@ export function SettingsClient() {
                       }
                       description={
                         config.maintenanceMode
-                          ? "Public marketplace access will be restored."
-                          : "Public marketplace access will be temporarily unavailable."
+                          ? "Marketplace access will be restored for visitors."
+                          : "Marketplace visitors will see a clear temporary maintenance message while the admin console remains available."
                       }
                       confirmLabel={
                         config.maintenanceMode
@@ -530,8 +529,8 @@ export function SettingsClient() {
                         void update(
                           { maintenanceMode: !config.maintenanceMode },
                           config.maintenanceMode
-                            ? "Marketplace restored"
-                            : "Maintenance mode enabled",
+                            ? "Marketplace access restored"
+                            : "Marketplace maintenance enabled",
                         )
                       }
                     />

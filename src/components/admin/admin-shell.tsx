@@ -1,15 +1,18 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Sidebar } from "./sidebar";
 import { Topbar } from "./topbar";
 import { Icons } from "@/lib/icons";
 import { useAdminData } from "@/components/admin/admin-data-provider";
 import { areaForPath } from "@/lib/admin-access";
+import { apiRequest } from "@/lib/api-client";
 
 export function AdminShell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const { sessionUser, loading, error, refresh, canAccess } = useAdminData();
@@ -31,6 +34,28 @@ export function AdminShell({ children }: { children: ReactNode }) {
     if (!loading && sessionUser && !canAccess(area))
       router.replace("/dashboard");
   }, [area, canAccess, loading, router, sessionUser]);
+  useEffect(() => {
+    let cancelled = false;
+
+    const checkMaintenance = async () => {
+      try {
+        const result = await apiRequest<{ maintenance: boolean }>(
+          "/api/v1/health/maintenance/",
+        );
+        if (!cancelled) setMaintenanceMode(Boolean(result.maintenance));
+      } catch {
+        // The admin console should remain usable even if the public status
+        // probe is temporarily unavailable.
+      }
+    };
+
+    void checkMaintenance();
+    const interval = window.setInterval(checkMaintenance, 30_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, []);
   const denied = !loading && sessionUser && !canAccess(area);
   return (
     <div className="min-h-dvh bg-[#f6f8f7] text-slate-900">
@@ -70,8 +95,28 @@ export function AdminShell({ children }: { children: ReactNode }) {
         <main
           id="admin-main"
           tabIndex={-1}
-          className="mx-auto w-full max-w-[1540px] p-4 pb-12 outline-none sm:p-6 lg:p-8"
+          className="mx-auto w-full max-w-[1540px] p-4 pb-10 outline-none sm:p-5 lg:p-6"
         >
+          {maintenanceMode && (
+            <div
+              role="status"
+              aria-live="polite"
+              className="mb-4 flex flex-col gap-2 border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div>
+                <strong className="font-bold">Marketplace maintenance mode is active.</strong>
+                <p className="mt-0.5 text-xs leading-5 text-amber-800">
+                  Visitors are seeing a temporary maintenance message. The admin console remains available.
+                </p>
+              </div>
+              <Link
+                href="/settings"
+                className="shrink-0 text-xs font-semibold text-amber-900 underline underline-offset-2 hover:text-amber-700"
+              >
+                Review service settings
+              </Link>
+            </div>
+          )}
           {error && (
             <div
               role="alert"
@@ -79,8 +124,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
               className="mb-5 flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 sm:flex-row sm:items-center sm:justify-between"
             >
               <div>
-                <strong className="font-black">
-                  Administration data is incomplete.
+                <strong className="font-bold">
+                  Some administration data could not be loaded.
                 </strong>
                 <p className="mt-0.5 text-xs leading-5 text-amber-800">
                   {error}
@@ -89,7 +134,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
               <button
                 type="button"
                 onClick={() => void refresh()}
-                className="shrink-0 rounded-lg border border-amber-300 bg-white px-3 py-2 text-xs font-black text-amber-900 hover:bg-amber-100"
+                className="shrink-0 rounded-md border border-amber-300 bg-white px-3 py-2 text-xs font-semibold text-amber-900 hover:bg-amber-100"
               >
                 Retry
               </button>
