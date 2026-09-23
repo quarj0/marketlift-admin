@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Sidebar } from "./sidebar";
 import { Topbar } from "./topbar";
@@ -108,12 +109,12 @@ export function AdminShell({ children }: { children: ReactNode }) {
                   Visitors are seeing a temporary maintenance message. The admin console remains available.
                 </p>
               </div>
-              <a
+              <Link
                 href="/settings"
                 className="shrink-0 text-xs font-semibold text-amber-900 underline underline-offset-2 hover:text-amber-700"
               >
                 Review service settings
-              </a>
+              </Link>
             </div>
           )}
           {error && (
