@@ -48,32 +48,31 @@ export class MarketliftApiError extends Error {
   }
 }
 
-function cookie(name: string) {
-  if (typeof document === "undefined") return "";
-  const found = document.cookie
-    .split(";")
-    .map((part) => part.trim())
-    .find((part) => part.startsWith(`${name}=`));
-  return found ? decodeURIComponent(found.slice(name.length + 1)) : "";
-}
+let csrfPromise: Promise<string> | null = null;
 
 export async function ensureCsrfToken() {
   if (typeof window === "undefined") return "";
-  const existing = cookie("csrftoken");
-  if (existing) return existing;
-  const response = await requestFetch(`${API_BASE_URL}/api/v1/auth/csrf/`, {
-    credentials: "include",
-    cache: "no-store",
-  });
-  if (!response.ok)
-    throw new MarketliftApiError(
-      "Could not initialize a secure session.",
-      response.status,
-    );
-  const body = (await response.json().catch(() => ({}))) as {
-    csrfToken?: string;
-  };
-  return cookie("csrftoken") || body.csrfToken || "";
+  if (!csrfPromise) {
+    csrfPromise = requestFetch(`${API_BASE_URL}/api/v1/auth/csrf/`, {
+      credentials: "include",
+      cache: "no-store",
+    })
+      .then(async (response) => {
+        if (!response.ok)
+          throw new MarketliftApiError(
+            "Could not initialize a secure session.",
+            response.status,
+          );
+        const body = (await response.json().catch(() => ({}))) as {
+          csrfToken?: string;
+        };
+        return body.csrfToken || "";
+      })
+      .finally(() => {
+        csrfPromise = null;
+      });
+  }
+  return csrfPromise;
 }
 
 export async function apiRequest<T>(
